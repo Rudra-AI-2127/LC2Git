@@ -1,0 +1,34 @@
+{
+  "manifest_version": 3,
+  "name": "LC2Git",
+  "version": "1.0.0",
+  "description": "Automatically sync accepted LeetCode solutions to GitHub.",
+  "permissions": [
+    "storage",
+    "activeTab",
+    "scripting",
+    "notifications"
+  ],
+  "host_permissions": [
+    "https://leetcode.com/*",
+    "https://api.github.com/*"
+  ],
+  "action": {
+    "default_title": "LC2Git",
+    "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://leetcode.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}

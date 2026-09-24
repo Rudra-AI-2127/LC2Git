@@ -1,0 +1,1 @@
+console.log("LC2Git: LeetCode detected.");
