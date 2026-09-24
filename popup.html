@@ -1,11 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
     <title>LC2Git</title>
-    <link rel="stylesheet" href="popup.css">
+
+    <link
+        rel="stylesheet"
+        href="popup.css"
+    >
+
 </head>
+
 
 <body>
 
@@ -17,45 +30,129 @@
             LeetCode → GitHub
         </p>
 
+
+        <!-- GitHub Status -->
+
         <div class="status">
-            <span id="statusDot">●</span>
-            <span id="statusText">Not connected</span>
+
+            <span id="statusDot">
+                ●
+            </span>
+
+            <span id="statusText">
+                Not connected
+            </span>
+
         </div>
 
-        <button id="connectGithub">
-            Connect GitHub
-        </button>
+
+        <!-- Token Section -->
+
+        <div id="connectSection">
+
+            <label for="githubToken">
+                GitHub Token
+            </label>
+
+            <input
+                type="password"
+                id="githubToken"
+                placeholder="ghp_..."
+                autocomplete="off"
+            >
+
+            <button id="connectGithub">
+                Connect GitHub
+            </button>
+
+        </div>
+
+
+        <!-- Connected Section -->
+
+        <div
+            id="connectedSection"
+            style="display: none;"
+        >
+
+            <p>
+                Connected as:
+                <strong id="githubUsername">
+                    -
+                </strong>
+            </p>
+
+            <button id="disconnectGithub">
+                Disconnect GitHub
+            </button>
+
+        </div>
+
+
+        <!-- Repository -->
 
         <div class="repo">
-            <p>Repository</p>
+
+            <p>
+                Repository
+            </p>
+
             <strong id="repoName">
                 Rudra-AI-2127/leetcode-solutions
             </strong>
+
         </div>
+
+
+        <!-- Stats -->
 
         <div class="stats">
 
             <div class="stat">
-                <span id="syncedCount">0</span>
-                <small>Synced</small>
+
+                <span id="syncedCount">
+                    0
+                </span>
+
+                <small>
+                    Synced
+                </small>
+
             </div>
 
+
             <div class="stat">
-                <span id="commitCount">0</span>
-                <small>Commits</small>
+
+                <span id="commitCount">
+                    0
+                </span>
+
+                <small>
+                    Commits
+                </small>
+
             </div>
 
         </div>
 
-        <button id="syncNow">
+
+        <!-- Sync -->
+
+        <button
+            id="syncNow"
+            disabled
+        >
             Sync Current Problem
         </button>
+
 
         <p id="message"></p>
 
     </div>
 
+
     <script src="popup.js"></script>
 
 </body>
+
 </html>

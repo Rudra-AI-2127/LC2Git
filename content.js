@@ -2,7 +2,9 @@
 // LC2Git - LeetCode Content Script
 // ============================================
 
-console.log("LC2Git: Content script loaded.");
+console.log(
+    "LC2Git: Content script loaded."
+);
 
 
 // ============================================
@@ -17,18 +19,31 @@ function getDifficulty() {
         "Hard"
     ];
 
-    const elements =
-        document.querySelectorAll("span, div, button");
 
-    for (const element of elements) {
+    const elements =
+        document.querySelectorAll(
+            "span, div, button"
+        );
+
+
+    for (
+        const element of elements
+    ) {
 
         const text =
             element.innerText?.trim();
 
-        if (difficulties.includes(text)) {
+
+        if (
+            difficulties.includes(text)
+        ) {
+
             return text;
+
         }
+
     }
+
 
     return "Unknown";
 }
@@ -44,27 +59,43 @@ function getProblemNumber() {
         ...document.scripts
     ];
 
-    for (const script of scripts) {
+
+    for (
+        const script of scripts
+    ) {
 
         const text =
             script.textContent;
 
+
         if (
             !text ||
-            !text.includes("questionFrontendId")
+            !text.includes(
+                "questionFrontendId"
+            )
         ) {
+
             continue;
+
         }
+
 
         const match =
             text.match(
                 /"questionFrontendId"\s*:\s*"(\d+)"/
             );
 
+
         if (match) {
-            return Number(match[1]);
+
+            return Number(
+                match[1]
+            );
+
         }
+
     }
+
 
     return null;
 }
@@ -79,19 +110,24 @@ function getProblemInfo() {
     const url =
         window.location.href;
 
+
     const match =
         url.match(
             /leetcode\.com\/problems\/([^/]+)/
         );
 
+
     if (!match) {
+
         return null;
+
     }
 
-    const slug = match[1];
+
+    const slug =
+        match[1];
 
 
-    // Try LeetCode's question title element
     const titleElement =
         document.querySelector(
             '[data-cy="question-title"]'
@@ -110,12 +146,16 @@ function getProblemInfo() {
 
         title =
             document.title
-                .replace(/^\d+\.\s*/, "")
+                .replace(
+                    /^\d+\.\s*/,
+                    ""
+                )
                 .replace(
                     /\s*-\s*LeetCode.*$/i,
                     ""
                 )
                 .trim();
+
     }
 
 
@@ -127,7 +167,6 @@ function getProblemInfo() {
         getProblemNumber();
 
 
-    // Normalize URL
     const cleanUrl =
         `https://leetcode.com/problems/${slug}/`;
 
@@ -148,186 +187,14 @@ function getProblemInfo() {
 
         url:
             cleanUrl
+
     };
+
 }
 
 
 // ============================================
-// 4. GET LANGUAGE FROM MONACO
-// ============================================
-
-function getLanguage() {
-
-    // Monaco isn't available
-    if (
-        typeof monaco === "undefined" ||
-        !monaco.editor
-    ) {
-
-        console.log(
-            "LC2Git: Monaco is not available."
-        );
-
-        return "Unknown";
-    }
-
-
-    const models =
-        monaco.editor.getModels();
-
-
-    for (const model of models) {
-
-        const language =
-            model.getLanguageId();
-
-
-        // Ignore empty/plaintext models
-        if (
-            language &&
-            language !== "plaintext"
-        ) {
-
-            return language;
-        }
-    }
-
-
-    return "Unknown";
-}
-
-
-// ============================================
-// 5. GET REAL EDITOR CODE
-// ============================================
-
-function getEditorCode() {
-
-    // Monaco isn't available
-    if (
-        typeof monaco === "undefined" ||
-        !monaco.editor
-    ) {
-
-        console.log(
-            "LC2Git: Monaco editor is not available."
-        );
-
-        return "";
-    }
-
-
-    const models =
-        monaco.editor.getModels();
-
-
-    for (const model of models) {
-
-        const language =
-            model.getLanguageId();
-
-
-        // Ignore plaintext model
-        if (
-            !language ||
-            language === "plaintext"
-        ) {
-            continue;
-        }
-
-
-        const code =
-            model.getValue();
-
-
-        if (
-            code &&
-            code.trim().length > 0
-        ) {
-
-            console.log(
-                "LC2Git: Real editor model found."
-            );
-
-            console.log(
-                "LC2Git: Language:",
-                language
-            );
-
-            console.log(
-                "LC2Git: Code:",
-                code
-            );
-
-
-            return code;
-        }
-    }
-
-
-    console.log(
-        "LC2Git: No usable editor model found."
-    );
-
-
-    return "";
-}
-
-
-// ============================================
-// 6. GET COMPLETE SOLUTION DATA
-// ============================================
-
-function getSolutionData() {
-
-    const problem =
-        getProblemInfo();
-
-
-    if (!problem) {
-
-        console.log(
-            "LC2Git: Problem information unavailable."
-        );
-
-        return null;
-    }
-
-
-    const language =
-        getLanguage();
-
-
-    const code =
-        getEditorCode();
-
-
-    if (!code) {
-
-        console.log(
-            "LC2Git: Could not extract code."
-        );
-
-        return null;
-    }
-
-
-    return {
-
-        problem:
-            problem,
-
-        language:
-            language,
-
-        code:
-            code
-    };
-}
-
-
-// ============================================
-// 7. SAVE PROBLEM INFORMATION
+// 4. SAVE PROBLEM INFORMATION
 // ============================================
 
 function saveProblemInfo() {
@@ -343,6 +210,7 @@ function saveProblemInfo() {
         );
 
         return;
+
     }
 
 
@@ -350,7 +218,10 @@ function saveProblemInfo() {
         "LC2Git: Problem detected!"
     );
 
-    console.log(problem);
+
+    console.log(
+        problem
+    );
 
 
     chrome.storage.local.set({
@@ -359,15 +230,15 @@ function saveProblemInfo() {
             problem
 
     });
+
 }
 
 
-// Run immediately
 saveProblemInfo();
 
 
 // ============================================
-// 8. DETECT PROBLEM NAVIGATION
+// 5. DETECT PROBLEM NAVIGATION
 // ============================================
 
 let lastSlug = null;
@@ -381,7 +252,9 @@ const problemObserver =
 
 
         if (!problem) {
+
             return;
+
         }
 
 
@@ -405,6 +278,7 @@ const problemObserver =
                 "LC2Git: New problem detected!",
                 problem
             );
+
         }
 
     });
@@ -423,7 +297,7 @@ problemObserver.observe(
 
 
 // ============================================
-// 9. SUBMISSION VARIABLES
+// 6. SUBMISSION VARIABLES
 // ============================================
 
 let waitingForSubmission =
@@ -435,7 +309,7 @@ let acceptedCountBeforeSubmit =
 
 
 // ============================================
-// 10. COUNT ACCEPTED RESULTS
+// 7. COUNT ACCEPTED RESULTS
 // ============================================
 
 function getAcceptedCount() {
@@ -453,26 +327,29 @@ function getAcceptedCount() {
     return matches
         ? matches.length
         : 0;
+
 }
 
 
 // ============================================
-// 11. HANDLE SUBMIT CLICK
+// 8. HANDLE SUBMIT CLICK
 // ============================================
 
 function handleSubmitClick() {
 
-    if (waitingForSubmission) {
+    if (
+        waitingForSubmission
+    ) {
 
         console.log(
             "LC2Git: Already waiting for submission."
         );
 
         return;
+
     }
 
 
-    // Record current Accepted count
     acceptedCountBeforeSubmit =
         getAcceptedCount();
 
@@ -504,11 +381,12 @@ function handleSubmitClick() {
             false
 
     });
+
 }
 
 
 // ============================================
-// 12. LISTEN FOR SUBMIT BUTTON
+// 9. LISTEN FOR SUBMIT BUTTON
 // ============================================
 
 document.addEventListener(
@@ -522,7 +400,9 @@ document.addEventListener(
 
 
         if (!button) {
+
             return;
+
         }
 
 
@@ -542,6 +422,7 @@ document.addEventListener(
         ) {
 
             handleSubmitClick();
+
         }
 
     }
@@ -549,48 +430,145 @@ document.addEventListener(
 
 
 // ============================================
-// 13. CHECK FOR NEW ACCEPTED RESULT
+// 10. EXTRACT + SYNC ACCEPTED SOLUTION
 // ============================================
 
-function checkForNewAcceptance() {
+function handleAcceptedSubmission() {
 
-    if (!waitingForSubmission) {
-        return;
-    }
-
-
-    const currentAcceptedCount =
-        getAcceptedCount();
+    waitingForSubmission =
+        false;
 
 
-    // A NEW Accepted result appeared
-    if (
-        currentAcceptedCount >
-        acceptedCountBeforeSubmit
-    ) {
-
-        waitingForSubmission =
-            false;
+    console.log(
+        "🎉 LC2Git: NEW ACCEPTED submission detected!"
+    );
 
 
-        console.log(
-            "🎉 LC2Git: NEW ACCEPTED submission detected!"
-        );
+    // ========================================
+    // ASK BACKGROUND TO ACCESS MONACO
+    // ========================================
+
+    chrome.runtime.sendMessage(
+        {
+            type:
+                "EXTRACT_EDITOR_DATA"
+        },
+        (editorData) => {
+
+            if (
+                chrome.runtime.lastError
+            ) {
+
+                console.error(
+                    "LC2Git: Editor extraction error:",
+                    chrome.runtime.lastError
+                );
 
 
-        // Extract actual solution
-        const solution =
-            getSolutionData();
+                chrome.storage.local.set({
+
+                    waitingForSubmission:
+                        false,
+
+                    submissionStatus:
+                        "Accepted",
+
+                    accepted:
+                        false
+
+                });
 
 
-        if (!solution) {
+                return;
 
-            console.error(
-                "LC2Git: Could not extract solution."
+            }
+
+
+            if (
+                !editorData ||
+                !editorData.success
+            ) {
+
+                console.error(
+                    "LC2Git: Could not extract solution.",
+                    editorData?.message
+                );
+
+
+                chrome.storage.local.set({
+
+                    waitingForSubmission:
+                        false,
+
+                    submissionStatus:
+                        "Accepted",
+
+                    accepted:
+                        false
+
+                });
+
+
+                return;
+
+            }
+
+
+            const problem =
+                getProblemInfo();
+
+
+            if (!problem) {
+
+                console.error(
+                    "LC2Git: Problem information unavailable."
+                );
+
+
+                return;
+
+            }
+
+
+            const language =
+                editorData.language;
+
+
+            const code =
+                editorData.code;
+
+
+            console.log(
+                "LC2Git: Monaco code extracted."
             );
 
 
+            console.log(
+                "LC2Git: Language:",
+                language
+            );
+
+
+            console.log(
+                "LC2Git: Code:",
+                code
+            );
+
+
+            // ====================================
+            // SAVE SOLUTION
+            // ====================================
+
             chrome.storage.local.set({
+
+                currentProblem:
+                    problem,
+
+                language:
+                    language,
+
+                code:
+                    code,
 
                 waitingForSubmission:
                     false,
@@ -599,58 +577,132 @@ function checkForNewAcceptance() {
                     "Accepted",
 
                 accepted:
-                    false
+                    true
+
+            })
+            .then(() => {
+
+                console.log(
+                    "LC2Git: Solution saved to extension storage."
+                );
+
+
+                // ====================================
+                // AUTOMATIC GITHUB SYNC
+                // ====================================
+
+                console.log(
+                    "LC2Git: Starting automatic GitHub sync..."
+                );
+
+
+                chrome.runtime.sendMessage(
+                    {
+                        type:
+                            "SYNC_SOLUTION"
+                    },
+                    (response) => {
+
+                        if (
+                            chrome.runtime.lastError
+                        ) {
+
+                            console.error(
+                                "LC2Git: GitHub sync error:",
+                                chrome.runtime.lastError
+                            );
+
+                            return;
+
+                        }
+
+
+                        if (
+                            response &&
+                            response.success
+                        ) {
+
+                            if (
+                                response.alreadySynced
+                            ) {
+
+                                console.log(
+                                    "LC2Git: Solution was already synced."
+                                );
+
+                            } else {
+
+                                console.log(
+                                    "🎉 LC2Git: Solution automatically committed to GitHub!"
+                                );
+
+
+                                console.log(
+                                    "LC2Git: GitHub path:",
+                                    response.path
+                                );
+
+
+                                console.log(
+                                    "LC2Git: Commit SHA:",
+                                    response.commitSha
+                                );
+
+                            }
+
+                        } else {
+
+                            console.error(
+                                "LC2Git: Automatic GitHub sync failed:",
+                                response?.message
+                            );
+
+                        }
+
+                    }
+                );
 
             });
 
-
-            return;
         }
+    );
 
-
-        console.log(
-            "LC2Git: Solution extracted!"
-        );
-
-
-        console.log(
-            solution
-        );
-
-
-        // Save everything
-        chrome.storage.local.set({
-
-            currentProblem:
-                solution.problem,
-
-            language:
-                solution.language,
-
-            code:
-                solution.code,
-
-            waitingForSubmission:
-                false,
-
-            submissionStatus:
-                "Accepted",
-
-            accepted:
-                true
-
-        });
-
-
-        console.log(
-            "LC2Git: Solution saved to extension storage."
-        );
-    }
 }
 
 
 // ============================================
-// 14. WATCH LEETCODE DOM
+// 11. CHECK FOR NEW ACCEPTED RESULT
+// ============================================
+
+function checkForNewAcceptance() {
+
+    if (
+        !waitingForSubmission
+    ) {
+
+        return;
+
+    }
+
+
+    const currentAcceptedCount =
+        getAcceptedCount();
+
+
+    if (
+        currentAcceptedCount >
+        acceptedCountBeforeSubmit
+    ) {
+
+        handleAcceptedSubmission();
+
+    }
+
+}
+
+
+// ============================================
+// 12. WATCH LEETCODE DOM
 // ============================================
 
 const submissionObserver =
@@ -674,7 +726,7 @@ submissionObserver.observe(
 
 
 // ============================================
-// 15. PERIODIC SUBMISSION CHECK
+// 13. PERIODIC SUBMISSION CHECK
 // ============================================
 
 setInterval(() => {
@@ -685,7 +737,7 @@ setInterval(() => {
 
 
 // ============================================
-// 16. READY
+// 14. READY
 // ============================================
 
 console.log(
