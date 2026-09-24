@@ -55,9 +55,83 @@ function getDifficulty() {
 
 function getProblemNumber() {
 
+    // ========================================
+    // METHOD 1
+    // READ NUMBER FROM QUESTION TITLE
+    // ========================================
+
+    const titleElement =
+        document.querySelector(
+            '[data-cy="question-title"]'
+        );
+
+
+    if (titleElement) {
+
+        const titleText =
+            titleElement.innerText?.trim();
+
+
+        if (titleText) {
+
+            const titleMatch =
+                titleText.match(
+                    /^(\d+)\s*\./
+                );
+
+
+            if (titleMatch) {
+
+                return Number(
+                    titleMatch[1]
+                );
+
+            }
+
+        }
+
+    }
+
+
+    // ========================================
+    // METHOD 2
+    // FALLBACK TO PAGE TITLE
+    // ========================================
+
+    const pageTitle =
+        document.title?.trim();
+
+
+    if (pageTitle) {
+
+        const pageTitleMatch =
+            pageTitle.match(
+                /^(\d+)\s*\./
+            );
+
+
+        if (pageTitleMatch) {
+
+            return Number(
+                pageTitleMatch[1]
+            );
+
+        }
+
+    }
+
+
+    // ========================================
+    // METHOD 3
+    // FALLBACK TO LEETCODE SCRIPT DATA
+    // ========================================
+
     const scripts = [
         ...document.scripts
     ];
+
+
+    const candidates = [];
 
 
     for (
@@ -80,19 +154,40 @@ function getProblemNumber() {
         }
 
 
-        const match =
-            text.match(
-                /"questionFrontendId"\s*:\s*"(\d+)"/
-            );
+        const matches =
+            [
+                ...text.matchAll(
+                    /"questionFrontendId"\s*:\s*"(\d+)"/g
+                )
+            ];
 
 
-        if (match) {
+        for (
+            const match of matches
+        ) {
 
-            return Number(
-                match[1]
+            candidates.push(
+                Number(
+                    match[1]
+                )
             );
 
         }
+
+    }
+
+
+    // ========================================
+    // USE LAST SCRIPT CANDIDATE
+    // ========================================
+
+    if (
+        candidates.length > 0
+    ) {
+
+        return candidates[
+            candidates.length - 1
+        ];
 
     }
 
@@ -141,6 +236,20 @@ function getProblemInfo() {
 
         title =
             titleElement.innerText.trim();
+
+        // ------------------------------------
+        // Remove problem number if present
+        // Example:
+        // "1. Two Sum"
+        // becomes:
+        // "Two Sum"
+        // ------------------------------------
+
+        title =
+            title.replace(
+                /^\d+\.\s*/,
+                ""
+            );
 
     } else {
 
@@ -453,6 +562,7 @@ function handleAcceptedSubmission() {
             type:
                 "EXTRACT_EDITOR_DATA"
         },
+
         (editorData) => {
 
             if (
@@ -514,6 +624,10 @@ function handleAcceptedSubmission() {
             }
 
 
+            // ====================================
+            // GET CURRENT PROBLEM
+            // ====================================
+
             const problem =
                 getProblemInfo();
 
@@ -546,6 +660,18 @@ function handleAcceptedSubmission() {
             console.log(
                 "LC2Git: Language:",
                 language
+            );
+
+
+            console.log(
+                "LC2Git: Problem number:",
+                problem.number
+            );
+
+
+            console.log(
+                "LC2Git: Problem title:",
+                problem.title
             );
 
 
@@ -601,6 +727,7 @@ function handleAcceptedSubmission() {
                         type:
                             "SYNC_SOLUTION"
                     },
+
                     (response) => {
 
                         if (
@@ -611,6 +738,7 @@ function handleAcceptedSubmission() {
                                 "LC2Git: GitHub sync error:",
                                 chrome.runtime.lastError
                             );
+
 
                             return;
 
