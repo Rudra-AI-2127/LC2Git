@@ -13,6 +13,38 @@ const GITHUB_API =
 const DEFAULT_REPOSITORY =
     "Rudra-AI-2127/leetcode-solutions";
 
+// ============================================
+// SHOW BROWSER NOTIFICATION
+// ============================================
+
+function showNotification(title, message) {
+
+    try {
+
+        chrome.notifications.create({
+
+            type: "basic",
+
+            iconUrl: "icon128.png",
+
+            title: title,
+
+            message: message
+
+        });
+
+    } catch (error) {
+
+        console.error(
+            "LC2Git: Notification failed:",
+            error
+        );
+
+    }
+
+}
+
+
 
 // ============================================
 // GET GITHUB TOKEN
@@ -35,12 +67,10 @@ async function getGitHubToken() {
 
 async function githubRequest(
     endpoint,
-    options = {},
-    tokenOverride = null
+    options = {}
 ) {
 
     const token =
-        tokenOverride ||
         await getGitHubToken();
 
 
@@ -57,6 +87,7 @@ async function githubRequest(
         await fetch(
             `${GITHUB_API}${endpoint}`,
             {
+
                 ...options,
 
                 headers: {
@@ -105,16 +136,20 @@ async function githubRequest(
     if (!response.ok) {
 
         throw new Error(
+
             data?.message ||
             `GitHub API error: ${response.status}`
+
         );
 
     }
 
 
     return {
+
         response,
         data
+
     };
 
 }
@@ -128,32 +163,15 @@ async function connectGitHub(token) {
 
     try {
 
-        if (!token) {
-
-            throw new Error(
-                "GitHub token is required."
-            );
-
-        }
-
-
-        // Validate the supplied token directly.
-        // Do NOT read from storage here because
-        // the token has not been stored yet.
-
         const result =
             await githubRequest(
-                "/user",
-                {},
-                token
+                "/user"
             );
 
 
         const username =
             result.data.login;
 
-
-        // Save the validated token.
 
         await chrome.storage.local.set({
 
@@ -223,8 +241,11 @@ async function disconnectGitHub() {
     await chrome.storage.local.remove([
 
         "githubToken",
+
         "githubConnected",
+
         "githubUsername",
+
         "githubRepository"
 
     ]);
@@ -249,7 +270,9 @@ async function disconnectGitHub() {
 // EXTRACT EDITOR DATA
 // ============================================
 
-async function extractEditorData(tabId) {
+async function extractEditorData(
+    tabId
+) {
 
     try {
 
@@ -257,8 +280,10 @@ async function extractEditorData(tabId) {
             await chrome.scripting.executeScript({
 
                 target: {
+
                     tabId:
                         tabId
+
                 },
 
                 world:
@@ -266,9 +291,9 @@ async function extractEditorData(tabId) {
 
                 func: () => {
 
-                    // -----------------------------
+                    // ============================================
                     // CHECK MONACO
-                    // -----------------------------
+                    // ============================================
 
                     if (
                         typeof monaco ===
@@ -288,9 +313,9 @@ async function extractEditorData(tabId) {
                     }
 
 
-                    // -----------------------------
-                    // GET MODELS
-                    // -----------------------------
+                    // ============================================
+                    // GET MONACO MODELS
+                    // ============================================
 
                     const models =
                         monaco
@@ -316,9 +341,9 @@ async function extractEditorData(tabId) {
                     }
 
 
-                    // -----------------------------
+                    // ============================================
                     // FIND CODE MODEL
-                    // -----------------------------
+                    // ============================================
 
                     let selectedModel =
                         null;
@@ -362,9 +387,17 @@ async function extractEditorData(tabId) {
                     }
 
 
+                    // ============================================
+                    // GET CODE
+                    // ============================================
+
                     const code =
                         selectedModel.getValue();
 
+
+                    // ============================================
+                    // DETECT LANGUAGE
+                    // ============================================
 
                     let language =
                         selectedModel
@@ -441,8 +474,6 @@ async function extractEditorData(tabId) {
     }
 
 }
-
-
 // ============================================
 // GET FILE EXTENSION
 // ============================================
@@ -542,11 +573,14 @@ async function getLeetCodeProblemMetadata(
     const query = `
         query questionData($titleSlug: String!) {
             question(titleSlug: $titleSlug) {
+
                 questionFrontendId
+
                 topicTags {
                     name
                     slug
                 }
+
             }
         }
     `;
@@ -682,6 +716,10 @@ function getTopicFolderFromTopics(
         );
 
 
+    // ============================================
+    // ARRAYS
+    // ============================================
+
     if (
         topicSet.has("array")
     ) {
@@ -691,6 +729,10 @@ function getTopicFolderFromTopics(
     }
 
 
+    // ============================================
+    // LINKED LIST
+    // ============================================
+
     if (
         topicSet.has("linked list")
     ) {
@@ -699,6 +741,10 @@ function getTopicFolderFromTopics(
 
     }
 
+
+    // ============================================
+    // TREES
+    // ============================================
 
     if (
         topicSet.has("tree") ||
@@ -711,6 +757,10 @@ function getTopicFolderFromTopics(
     }
 
 
+    // ============================================
+    // GRAPHS
+    // ============================================
+
     if (
         topicSet.has("graph")
     ) {
@@ -719,6 +769,10 @@ function getTopicFolderFromTopics(
 
     }
 
+
+    // ============================================
+    // DYNAMIC PROGRAMMING
+    // ============================================
 
     if (
         topicSet.has("dynamic programming")
@@ -729,6 +783,10 @@ function getTopicFolderFromTopics(
     }
 
 
+    // ============================================
+    // BACKTRACKING
+    // ============================================
+
     if (
         topicSet.has("backtracking")
     ) {
@@ -738,6 +796,10 @@ function getTopicFolderFromTopics(
     }
 
 
+    // ============================================
+    // BINARY SEARCH
+    // ============================================
+
     if (
         topicSet.has("binary search")
     ) {
@@ -746,6 +808,10 @@ function getTopicFolderFromTopics(
 
     }
 
+
+    // ============================================
+    // HEAP / PRIORITY QUEUE
+    // ============================================
 
     if (
         topicSet.has("heap") ||
@@ -757,6 +823,10 @@ function getTopicFolderFromTopics(
     }
 
 
+    // ============================================
+    // STACK / QUEUE
+    // ============================================
+
     if (
         topicSet.has("stack") ||
         topicSet.has("queue")
@@ -767,6 +837,10 @@ function getTopicFolderFromTopics(
     }
 
 
+    // ============================================
+    // HASH TABLE
+    // ============================================
+
     if (
         topicSet.has("hash table")
     ) {
@@ -775,6 +849,10 @@ function getTopicFolderFromTopics(
 
     }
 
+
+    // ============================================
+    // GREEDY
+    // ============================================
 
     if (
         topicSet.has("greedy")
@@ -785,6 +863,10 @@ function getTopicFolderFromTopics(
     }
 
 
+    // ============================================
+    // STRING
+    // ============================================
+
     if (
         topicSet.has("string")
     ) {
@@ -794,6 +876,10 @@ function getTopicFolderFromTopics(
     }
 
 
+    // ============================================
+    // MATH
+    // ============================================
+
     if (
         topicSet.has("math")
     ) {
@@ -802,6 +888,10 @@ function getTopicFolderFromTopics(
 
     }
 
+
+    // ============================================
+    // DEFAULT
+    // ============================================
 
     return "Other";
 
@@ -825,8 +915,7 @@ function createFileName(problem) {
 
     const slug =
         String(
-            problem.slug ||
-            "solution"
+            problem.slug || "solution"
         )
             .toLowerCase()
             .replace(
@@ -855,9 +944,7 @@ function encodeBase64(text) {
             .encode(text);
 
 
-    let binary =
-        "";
-
+    let binary = "";
 
     for (
         const byte of bytes
@@ -918,14 +1005,18 @@ function decodeBase64(base64) {
 // GET EXISTING GITHUB FILE
 // ============================================
 
-async function getExistingFile(path) {
+async function getExistingFile(
+    path
+) {
 
     try {
 
         const connection =
-            await chrome.storage.local.get([
-                "githubRepository"
-            ]);
+            await chrome.storage.local.get(
+                [
+                    "githubRepository"
+                ]
+            );
 
 
         const repository =
@@ -979,16 +1070,18 @@ async function syncSolution(
 
     try {
 
-        // ----------------------------------------
+        // ============================================
         // GET CONNECTION STATE
-        // ----------------------------------------
+        // ============================================
 
         const connection =
-            await chrome.storage.local.get([
-                "githubConnected",
-                "githubRepository",
-                "accepted"
-            ]);
+            await chrome.storage.local.get(
+                [
+                    "githubConnected",
+                    "githubRepository",
+                    "accepted"
+                ]
+            );
 
 
         if (
@@ -1045,9 +1138,9 @@ async function syncSolution(
         }
 
 
-        // ----------------------------------------
-        // GET CANONICAL LEETCODE METADATA
-        // ----------------------------------------
+        // ============================================
+        // GET LEETCODE METADATA
+        // ============================================
 
         const metadata =
             await getLeetCodeProblemMetadata(
@@ -1058,6 +1151,10 @@ async function syncSolution(
         const topics =
             metadata.topics;
 
+
+        // ============================================
+        // USE CANONICAL PROBLEM NUMBER
+        // ============================================
 
         if (
             metadata.number
@@ -1099,9 +1196,9 @@ async function syncSolution(
         );
 
 
-        // ----------------------------------------
+        // ============================================
         // GET FOLDER
-        // ----------------------------------------
+        // ============================================
 
         const folder =
             getTopicFolderFromTopics(
@@ -1115,9 +1212,9 @@ async function syncSolution(
         );
 
 
-        // ----------------------------------------
-        // GET EXTENSION
-        // ----------------------------------------
+        // ============================================
+        // GET FILE EXTENSION
+        // ============================================
 
         const extension =
             getFileExtension(
@@ -1125,9 +1222,9 @@ async function syncSolution(
             );
 
 
-        // ----------------------------------------
+        // ============================================
         // CREATE FILE NAME
-        // ----------------------------------------
+        // ============================================
 
         const fileName =
             createFileName(
@@ -1135,9 +1232,9 @@ async function syncSolution(
             );
 
 
-        // ----------------------------------------
+        // ============================================
         // CREATE GITHUB PATH
-        // ----------------------------------------
+        // ============================================
 
         const path =
             `${folder}/${fileName}.${extension}`;
@@ -1149,9 +1246,9 @@ async function syncSolution(
         );
 
 
-        // ----------------------------------------
-        // CHECK EXISTING FILE
-        // ----------------------------------------
+        // ============================================
+        // GET EXISTING FILE
+        // ============================================
 
         const existingFile =
             await getExistingFile(
@@ -1159,9 +1256,9 @@ async function syncSolution(
             );
 
 
-        // ----------------------------------------
+        // ============================================
         // DUPLICATE PROTECTION
-        // ----------------------------------------
+        // ============================================
 
         if (
             existingFile &&
@@ -1188,6 +1285,12 @@ async function syncSolution(
                 );
 
 
+                showNotification(
+                    "LC2Git",
+                    `${problem.title} is already synced to GitHub.`
+                );
+
+
                 return {
 
                     success:
@@ -1209,26 +1312,26 @@ async function syncSolution(
         }
 
 
-        // ----------------------------------------
+        // ============================================
         // GET REPOSITORY
-        // ----------------------------------------
+        // ============================================
 
         const repository =
             connection.githubRepository ||
             DEFAULT_REPOSITORY;
 
 
-        // ----------------------------------------
-        // COMMIT MESSAGE
-        // ----------------------------------------
+        // ============================================
+        // CREATE COMMIT MESSAGE
+        // ============================================
 
         const commitMessage =
             `feat: add ${problem.number}. ${problem.title}`;
 
 
-        // ----------------------------------------
-        // REQUEST BODY
-        // ----------------------------------------
+        // ============================================
+        // PREPARE GITHUB REQUEST
+        // ============================================
 
         const requestBody = {
 
@@ -1241,9 +1344,9 @@ async function syncSolution(
         };
 
 
-        // ----------------------------------------
-        // UPDATE EXISTING FILE IF NECESSARY
-        // ----------------------------------------
+        // ============================================
+        // UPDATE EXISTING FILE
+        // ============================================
 
         if (
             existingFile &&
@@ -1256,9 +1359,9 @@ async function syncSolution(
         }
 
 
-        // ----------------------------------------
+        // ============================================
         // PUSH TO GITHUB
-        // ----------------------------------------
+        // ============================================
 
         const result =
             await githubRequest(
@@ -1277,9 +1380,9 @@ async function syncSolution(
             );
 
 
-        // ----------------------------------------
-        // UPDATE STATISTICS
-        // ----------------------------------------
+        // ============================================
+        // UPDATE LOCAL STATISTICS
+        // ============================================
 
         const stats =
             await chrome.storage.local.get([
@@ -1301,9 +1404,9 @@ async function syncSolution(
             ) + 1;
 
 
-        // ----------------------------------------
-        // CREATE HISTORY ENTRY
-        // ----------------------------------------
+        // ============================================
+        // CREATE SYNC HISTORY ENTRY
+        // ============================================
 
         const historyEntry = {
 
@@ -1317,6 +1420,7 @@ async function syncSolution(
                 language,
 
             folder:
+
                 folder,
 
             path:
@@ -1332,6 +1436,10 @@ async function syncSolution(
         };
 
 
+        // ============================================
+        // GET EXISTING HISTORY
+        // ============================================
+
         const syncHistory =
             Array.isArray(
                 stats.syncHistory
@@ -1340,10 +1448,18 @@ async function syncSolution(
                 : [];
 
 
+        // ============================================
+        // ADD NEW ENTRY TO FRONT
+        // ============================================
+
         syncHistory.unshift(
             historyEntry
         );
 
+
+        // ============================================
+        // KEEP LAST 20 SYNCS
+        // ============================================
 
         const limitedHistory =
             syncHistory.slice(
@@ -1352,9 +1468,9 @@ async function syncSolution(
             );
 
 
-        // ----------------------------------------
+        // ============================================
         // SAVE STATISTICS + HISTORY
-        // ----------------------------------------
+        // ============================================
 
         await chrome.storage.local.set({
 
@@ -1370,12 +1486,18 @@ async function syncSolution(
         });
 
 
-        // ----------------------------------------
+        // ============================================
         // SUCCESS
-        // ----------------------------------------
+        // ============================================
 
         console.log(
             "🎉 LC2Git: Solution synced to GitHub!"
+        );
+
+
+        showNotification(
+            "LC2Git — Solution synced",
+            `${problem.title} was synced to GitHub.`
         );
 
 
@@ -1424,6 +1546,12 @@ async function syncSolution(
         );
 
 
+        showNotification(
+            "LC2Git — Sync failed",
+            error.message || "Unable to sync solution to GitHub."
+        );
+
+
         return {
 
             success:
@@ -1450,9 +1578,9 @@ chrome.runtime.onMessage.addListener(
         sendResponse
     ) => {
 
-        // ========================================
+        // ============================================
         // CONNECT GITHUB
-        // ========================================
+        // ============================================
 
         if (
             message.type ===
@@ -1487,9 +1615,9 @@ chrome.runtime.onMessage.addListener(
         }
 
 
-        // ========================================
+        // ============================================
         // DISCONNECT GITHUB
-        // ========================================
+        // ============================================
 
         if (
             message.type ===
@@ -1522,9 +1650,9 @@ chrome.runtime.onMessage.addListener(
         }
 
 
-        // ========================================
+        // ============================================
         // GET GITHUB STATUS
-        // ========================================
+        // ============================================
 
         if (
             message.type ===
@@ -1583,9 +1711,9 @@ chrome.runtime.onMessage.addListener(
         }
 
 
-        // ========================================
+        // ============================================
         // EXTRACT EDITOR DATA
-        // ========================================
+        // ============================================
 
         if (
             message.type ===
@@ -1642,9 +1770,44 @@ chrome.runtime.onMessage.addListener(
         }
 
 
-        // ========================================
+        // ============================================
+        // SHOW NOTIFICATION
+        // ============================================
+
+        if (
+            message.type ===
+            "SHOW_NOTIFICATION"
+        ) {
+
+            console.log(
+                "LC2Git: SHOW_NOTIFICATION received:",
+                message
+            );
+
+            showNotification(
+                message.title ||
+                    "LC2Git",
+
+                message.message ||
+                    ""
+            );
+
+            console.log(
+                "LC2Git: showNotification() called."
+            );
+
+            sendResponse({
+                success:
+                    true
+            });
+
+            return false;
+        }
+
+
+        // ============================================
         // SYNC SOLUTION
-        // ========================================
+        // ============================================
 
         if (
             message.type ===
@@ -1741,9 +1904,9 @@ chrome.runtime.onMessage.addListener(
         }
 
 
-        // ========================================
+        // ============================================
         // UNKNOWN MESSAGE
-        // ========================================
+        // ============================================
 
         sendResponse({
 

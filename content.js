@@ -1398,7 +1398,8 @@ async function extractEditorData() {
                     ) {
 
                         console.error(
-                            "LC2Git: Unable to extract editor data."
+                            "LC2Git: Unable to extract editor data.",
+                            response?.message
                         );
 
 
@@ -1409,8 +1410,12 @@ async function extractEditorData() {
                     }
 
 
+                    // IMPORTANT:
+                    // background.js returns the result directly.
+                    // It does NOT return { data: ... }
+
                     resolve(
-                        response.data
+                        response
                     );
 
                 }
@@ -1595,6 +1600,32 @@ async function handleAcceptedSubmission() {
 
             console.log(
                 "🔁 LC2Git: Duplicate submission detected locally. Skipping GitHub sync."
+            );
+
+
+            // ========================================
+            // SHOW DUPLICATE NOTIFICATION
+            // ========================================
+
+            safeRuntimeMessage(
+                {
+                    type:
+                        "SHOW_NOTIFICATION",
+
+                    title:
+                        "LC2Git",
+
+                    message:
+                        `${problem.title} is already synced to GitHub.`
+                },
+                (response) => {
+
+                    console.log(
+                        "LC2Git: Notification response:",
+                        response
+                    );
+
+                }
             );
 
 

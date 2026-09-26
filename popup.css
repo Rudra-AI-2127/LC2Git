@@ -1,162 +1,666 @@
-body {
-    margin: 0;
-    width: 320px;
-    background: #09090b;
-    color: #fafafa;
-    font-family: Arial, sans-serif;
-}
+/* ============================================
+   LC2Git — Clean Developer UI
+   ============================================ */
 
-.container {
-    padding: 20px;
-}
+:root {
+    --background: #0b0b0c;
+    --panel: #141416;
+    --panel-hover: #19191c;
 
-h1 {
-    margin: 0;
-    font-size: 24px;
-}
+    --border: #29292d;
+    --border-hover: #36363b;
 
-.subtitle {
-    color: #a1a1aa;
-    margin-top: 5px;
-}
+    --text: #f2f2f3;
+    --text-secondary: #c4c4c8;
+    --text-muted: #85858b;
 
-.status {
-    margin: 20px 0;
-    padding: 10px;
-    background: #1f2937;
-    border-radius: 8px;
-}
+    --white: #ffffff;
 
-#statusDot {
-    color: #f59e0b;
-}
+    --success: #22c55e;
+    --warning: #f59e0b;
+    --danger: #ef4444;
 
-button {
-    width: 100%;
-    padding: 11px;
-    margin: 7px 0;
-    border: none;
-    border-radius: 7px;
-    cursor: pointer;
-    background: #6366f1;
-    color: white;
-    font-weight: bold;
-}
-
-button:hover {
-    background: #818cf8;
-}
-
-button:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-}
-
-input {
-    box-sizing: border-box;
-    width: 100%;
-    padding: 10px;
-    margin-top: 8px;
-    border: 1px solid #27272a;
-    border-radius: 7px;
-    background: #111827;
-    color: #fafafa;
-    outline: none;
-}
-
-input:focus {
-    border-color: #6366f1;
-}
-
-.repo {
-    margin-top: 15px;
-    padding: 12px;
-    background: #1f2937;
-    border-radius: 8px;
-    overflow-wrap: anywhere;
-}
-
-.repo p {
-    margin: 0 0 5px;
-    color: #a1a1aa;
-    font-size: 12px;
-}
-
-.stats {
-    display: flex;
-    gap: 10px;
-    margin: 15px 0;
-}
-
-.stat {
-    flex: 1;
-    background: #1f2937;
-    padding: 12px;
-    text-align: center;
-    border-radius: 8px;
-}
-
-.stat span {
-    display: block;
-    font-size: 20px;
-    font-weight: bold;
-}
-
-.stat small {
-    color: #a1a1aa;
+    --radius: 8px;
 }
 
 
 /* ============================================
-   RECENT HISTORY
+   BODY
    ============================================ */
 
-.history {
-    margin-top: 15px;
-}
-
-.historyHeader {
-    margin-bottom: 8px;
-    font-size: 13px;
-    font-weight: bold;
-    color: #fafafa;
-}
-
-#historyList {
-    max-height: 180px;
-    overflow-y: auto;
-}
-
-.historyItem {
-    padding: 10px;
-    margin-bottom: 7px;
-    background: #1f2937;
-    border-radius: 7px;
-}
-
-.historyTitle {
-    font-size: 13px;
-    font-weight: bold;
-    margin-bottom: 4px;
-}
-
-.historyMeta {
-    font-size: 11px;
-    color: #a1a1aa;
-    line-height: 1.5;
-}
-
-.emptyHistory {
+html {
     margin: 0;
-    padding: 10px;
-    background: #1f2937;
+    padding: 0;
+
+    overflow: hidden;
+}
+
+
+body {
+    margin: 0;
+    padding: 0;
+
+    width: 320px;
+
+    overflow: hidden;
+
+    background: var(--background);
+
+    color: var(--text);
+
+    font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        Arial,
+        sans-serif;
+
+    font-size: 13px;
+
+    -webkit-font-smoothing: antialiased;
+}
+
+
+/* ============================================
+   MAIN CONTAINER
+   ============================================ */
+
+.container {
+    box-sizing: border-box;
+
+    width: 100%;
+
+    padding: 16px;
+}
+
+
+/* ============================================
+   HEADER
+   ============================================ */
+
+h1 {
+    margin: 0;
+
+    color: var(--text);
+
+    font-size: 21px;
+
+    font-weight: 650;
+
+    letter-spacing: -0.3px;
+}
+
+
+.subtitle {
+    margin: 3px 0 0;
+
+    color: var(--text-muted);
+
+    font-size: 11px;
+}
+
+
+/* ============================================
+   STATUS
+   ============================================ */
+
+.status {
+    display: flex;
+
+    align-items: center;
+
+    gap: 8px;
+
+    box-sizing: border-box;
+
+    width: 100%;
+
+    margin-top: 14px;
+
+    padding: 9px 10px;
+
+    background: var(--panel);
+
+    border: 1px solid var(--border);
+
+    border-radius: var(--radius);
+}
+
+
+#statusDot {
+    color: var(--warning);
+
+    font-size: 9px;
+}
+
+
+#statusText {
+    color: var(--text-secondary);
+
+    font-size: 11px;
+
+    font-weight: 500;
+}
+
+
+/* ============================================
+   LABEL
+   ============================================ */
+
+label {
+    display: block;
+
+    margin-bottom: 6px;
+
+    color: var(--text-secondary);
+
+    font-size: 11px;
+
+    font-weight: 500;
+}
+
+
+/* ============================================
+   INPUT
+   ============================================ */
+
+input {
+    box-sizing: border-box;
+
+    width: 100%;
+
+    height: 36px;
+
+    padding: 0 10px;
+
+    margin: 0;
+
+    outline: none;
+
+    border: 1px solid var(--border);
+
     border-radius: 7px;
-    color: #a1a1aa;
-    font-size: 12px;
+
+    background: #101012;
+
+    color: var(--text);
+
+    font-family: inherit;
+
+    font-size: 11px;
+
+    transition:
+        border-color 0.15s ease,
+        background 0.15s ease;
+}
+
+
+input::placeholder {
+    color: #626268;
+}
+
+
+input:hover {
+    border-color: var(--border-hover);
+}
+
+
+input:focus {
+    background: #121214;
+
+    border-color: #4a4a50;
+}
+
+
+/* ============================================
+   BUTTONS
+   ============================================ */
+
+button {
+    box-sizing: border-box;
+
+    width: 100%;
+
+    height: 36px;
+
+    padding: 0 12px;
+
+    margin: 8px 0 0;
+
+    border: 1px solid #d4d4d8;
+
+    border-radius: 7px;
+
+    background: #e4e4e7;
+
+    color: #111113;
+
+    cursor: pointer;
+
+    font-family: inherit;
+
+    font-size: 11px;
+
+    font-weight: 600;
+
+    transition:
+        background 0.15s ease,
+        border-color 0.15s ease;
+}
+
+
+button:hover {
+    background: #ffffff;
+
+    border-color: #ffffff;
+}
+
+
+button:active {
+    background: #d4d4d8;
+}
+
+
+button:disabled {
+    opacity: 0.4;
+
+    cursor: not-allowed;
+}
+
+
+/* ============================================
+   CONNECTED SECTION
+   ============================================ */
+
+#connectedSection {
+    box-sizing: border-box;
+
+    margin-top: 9px;
+
+    padding: 9px 10px;
+
+    background: #111813;
+
+    border: 1px solid #1d3424;
+
+    border-radius: var(--radius);
+}
+
+
+#connectedSection p {
+    margin: 0 0 7px;
+
+    color: var(--text-muted);
+
+    font-size: 11px;
+}
+
+
+#githubUsername {
+    color: #86efac;
+
+    font-weight: 600;
+}
+
+
+/* ============================================
+   REPOSITORY
+   ============================================ */
+
+.repo {
+    box-sizing: border-box;
+
+    width: 100%;
+
+    margin-top: 10px;
+
+    padding: 10px;
+
+    background: var(--panel);
+
+    border: 1px solid var(--border);
+
+    border-radius: var(--radius);
+
+    overflow: hidden;
+}
+
+
+.repo p {
+    margin: 0 0 5px;
+
+    color: var(--text-muted);
+
+    font-size: 9px;
+
+    font-weight: 600;
+
+    text-transform: uppercase;
+
+    letter-spacing: 0.5px;
+}
+
+
+.repo strong {
+    display: block;
+
+    color: var(--text-secondary);
+
+    font-size: 10px;
+
+    font-weight: 500;
+
+    line-height: 1.4;
+
+    overflow-wrap: anywhere;
+}
+
+
+/* ============================================
+   STATS
+   ============================================ */
+
+.stats {
+    display: flex;
+
+    gap: 8px;
+
+    width: 100%;
+
+    margin: 10px 0;
+}
+
+
+.stat {
+    box-sizing: border-box;
+
+    flex: 1;
+
+    padding: 9px 6px;
+
+    background: var(--panel);
+
+    border: 1px solid var(--border);
+
+    border-radius: var(--radius);
+
     text-align: center;
 }
 
+
+.stat span {
+    display: block;
+
+    color: var(--text);
+
+    font-size: 18px;
+
+    font-weight: 650;
+
+    line-height: 1.2;
+}
+
+
+.stat small {
+    display: block;
+
+    margin-top: 3px;
+
+    color: var(--text-muted);
+
+    font-size: 8px;
+
+    font-weight: 600;
+
+    text-transform: uppercase;
+
+    letter-spacing: 0.5px;
+}
+
+
+/* ============================================
+   HISTORY
+   ============================================ */
+
+.history {
+    margin-top: 10px;
+}
+
+
+.historyHeader {
+    margin-bottom: 6px;
+
+    color: var(--text-secondary);
+
+    font-size: 10px;
+
+    font-weight: 600;
+
+    text-transform: uppercase;
+
+    letter-spacing: 0.5px;
+}
+
+
+/* ============================================
+   HISTORY LIST
+   ============================================ */
+
+#historyList {
+    max-height: 125px;
+
+    overflow: hidden;
+}
+
+
+/* ============================================
+   HISTORY ITEM
+   ============================================ */
+
+.historyItem {
+    box-sizing: border-box;
+
+    width: 100%;
+
+    padding: 7px 9px;
+
+    margin-bottom: 5px;
+
+    background: var(--panel);
+
+    border: 1px solid var(--border);
+
+    border-radius: 7px;
+}
+
+
+.historyItem:last-child {
+    margin-bottom: 0;
+}
+
+
+.historyTitle {
+    margin-bottom: 2px;
+
+    color: var(--text-secondary);
+
+    font-size: 10px;
+
+    font-weight: 600;
+
+    line-height: 1.3;
+
+    white-space: nowrap;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+}
+
+
+.historyMeta {
+    color: var(--text-muted);
+
+    font-size: 9px;
+
+    line-height: 1.3;
+
+    white-space: nowrap;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+}
+
+
+/* ============================================
+   EMPTY HISTORY
+   ============================================ */
+
+.emptyHistory {
+    box-sizing: border-box;
+
+    margin: 0;
+
+    padding: 9px;
+
+    background: var(--panel);
+
+    border: 1px solid var(--border);
+
+    border-radius: 7px;
+
+    color: var(--text-muted);
+
+    font-size: 10px;
+
+    text-align: center;
+}
+
+
+/* ============================================
+   SYNC BUTTON
+   ============================================ */
+
+#syncNow {
+    height: 37px;
+
+    margin-top: 10px;
+
+    background: var(--white);
+
+    color: #111113;
+
+    border-color: var(--white);
+}
+
+
+#syncNow:hover {
+    background: #e4e4e7;
+
+    border-color: #e4e4e7;
+}
+
+
+/* ============================================
+   DISCONNECT
+   ============================================ */
+
+#disconnectGithub {
+    height: 32px;
+
+    margin-top: 7px;
+
+    background: transparent;
+
+    border-color: var(--border);
+
+    color: var(--text-muted);
+}
+
+
+#disconnectGithub:hover {
+    background: #18181b;
+
+    border-color: #3f3f46;
+
+    color: #d4d4d8;
+}
+
+
+/* ============================================
+   MESSAGE
+   ============================================ */
+
 #message {
-    color: #22d3ee;
+    min-height: 13px;
+
+    margin: 7px 0 0;
+
+    color: var(--text-muted);
+
+    font-size: 9px;
+
+    line-height: 1.3;
+
+    text-align: center;
+}
+
+
+/* ============================================
+   REMOVE ALL SCROLLBARS
+   ============================================ */
+
+* {
+    scrollbar-width: none;
+}
+
+
+*::-webkit-scrollbar {
+    display: none;
+
+    width: 0;
+
+    height: 0;
+}
+
+
+/* ============================================
+   SELECTION
+   ============================================ */
+
+::selection {
+    background: #3f3f46;
+
+    color: #ffffff;
+}
+
+
+/* ============================================
+   SYNC STATUS MESSAGE
+   ============================================ */
+
+.message {
+    margin-top: 8px;
+    min-height: 18px;
     font-size: 12px;
+    line-height: 18px;
+    color: var(--text-muted);
+    transition: color 0.15s ease;
+}
+
+.message.loading {
+    color: var(--text-secondary);
+}
+
+.message.success {
+    color: var(--success);
+}
+
+.message.duplicate {
+    color: var(--text-secondary);
+}
+
+.message.error {
+    color: var(--danger);
 }
