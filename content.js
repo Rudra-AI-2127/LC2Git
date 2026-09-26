@@ -46,6 +46,7 @@ function getDifficulty() {
 
 
     return "Unknown";
+
 }
 
 
@@ -57,7 +58,7 @@ function getProblemNumber() {
 
     // ========================================
     // METHOD 1
-    // READ NUMBER FROM QUESTION TITLE
+    // QUESTION TITLE
     // ========================================
 
     const titleElement =
@@ -95,7 +96,7 @@ function getProblemNumber() {
 
     // ========================================
     // METHOD 2
-    // FALLBACK TO PAGE TITLE
+    // PAGE TITLE
     // ========================================
 
     const pageTitle =
@@ -123,7 +124,7 @@ function getProblemNumber() {
 
     // ========================================
     // METHOD 3
-    // FALLBACK TO LEETCODE SCRIPT DATA
+    // LEETCODE SCRIPT DATA
     // ========================================
 
     const scripts = [
@@ -177,10 +178,6 @@ function getProblemNumber() {
     }
 
 
-    // ========================================
-    // USE LAST SCRIPT CANDIDATE
-    // ========================================
-
     if (
         candidates.length > 0
     ) {
@@ -193,6 +190,7 @@ function getProblemNumber() {
 
 
     return null;
+
 }
 
 
@@ -237,13 +235,6 @@ function getProblemInfo() {
         title =
             titleElement.innerText.trim();
 
-        // ------------------------------------
-        // Remove problem number if present
-        // Example:
-        // "1. Two Sum"
-        // becomes:
-        // "Two Sum"
-        // ------------------------------------
 
         title =
             title.replace(
@@ -418,6 +409,22 @@ let acceptedCountBeforeSubmit =
 
 
 // ============================================
+// DUPLICATE PROCESSING LOCK
+// ============================================
+
+let processingAcceptedSubmission =
+    false;
+
+
+// ============================================
+// CURRENT SUBMISSION FINGERPRINT
+// ============================================
+
+let currentSubmissionFingerprint =
+    null;
+
+
+// ============================================
 // 7. COUNT ACCEPTED RESULTS
 // ============================================
 
@@ -441,7 +448,120 @@ function getAcceptedCount() {
 
 
 // ============================================
-// 8. HANDLE SUBMIT CLICK
+// 8. CREATE NORMALIZED SOLUTION FINGERPRINT
+// ============================================
+
+async function createSolutionFingerprint(
+    problem,
+    language,
+    code
+) {
+
+    // ========================================
+    // NORMALIZE CODE
+    // ========================================
+
+    const normalizedCode =
+        String(code || "")
+            .replace(
+                /\r\n/g,
+                "\n"
+            )
+            .replace(
+                /\r/g,
+                "\n"
+            )
+            .split("\n")
+            .map(
+                line =>
+                    line.trimEnd()
+            )
+            .join("\n")
+            .trim();
+
+
+    // ========================================
+    // NORMALIZE LANGUAGE
+    // ========================================
+
+    const normalizedLanguage =
+        String(
+            language || ""
+        )
+            .trim()
+            .toLowerCase();
+
+
+    // ========================================
+    // NORMALIZE PROBLEM SLUG
+    // ========================================
+
+    const normalizedSlug =
+        String(
+            problem?.slug || ""
+        )
+            .trim()
+            .toLowerCase();
+
+
+    // ========================================
+    // CREATE RAW FINGERPRINT DATA
+    // ========================================
+
+    const rawData =
+        `${normalizedSlug}|${normalizedLanguage}|${normalizedCode}`;
+
+
+    // ========================================
+    // ENCODE
+    // ========================================
+
+    const encoded =
+        new TextEncoder().encode(
+            rawData
+        );
+
+
+    // ========================================
+    // SHA-256
+    // ========================================
+
+    const hashBuffer =
+        await crypto.subtle.digest(
+            "SHA-256",
+            encoded
+        );
+
+
+    // ========================================
+    // CONVERT TO HEX
+    // ========================================
+
+    const hashArray =
+        Array.from(
+            new Uint8Array(
+                hashBuffer
+            )
+        );
+
+
+    return hashArray
+        .map(
+            byte =>
+                byte
+                    .toString(16)
+                    .padStart(
+                        2,
+                        "0"
+                    )
+        )
+        .join("");
+
+}
+
+
+// ============================================
+// 9. HANDLE SUBMIT CLICK
 // ============================================
 
 function handleSubmitClick() {
@@ -457,6 +577,17 @@ function handleSubmitClick() {
         return;
 
     }
+
+
+    // Reset processing state
+    // for a new submission.
+
+    processingAcceptedSubmission =
+        false;
+
+
+    currentSubmissionFingerprint =
+        null;
 
 
     acceptedCountBeforeSubmit =
@@ -495,7 +626,7 @@ function handleSubmitClick() {
 
 
 // ============================================
-// 9. LISTEN FOR SUBMIT BUTTON
+// 10. LISTEN FOR SUBMIT BUTTON
 // ============================================
 
 document.addEventListener(
@@ -539,10 +670,31 @@ document.addEventListener(
 
 
 // ============================================
-// 10. EXTRACT + SYNC ACCEPTED SOLUTION
+// 11. HANDLE ACCEPTED SUBMISSION
 // ============================================
 
-function handleAcceptedSubmission() {
+async function handleAcceptedSubmission() {
+
+    // ========================================
+    // DUPLICATE PROCESSING PROTECTION
+    // ========================================
+
+    if (
+        processingAcceptedSubmission
+    ) {
+
+        console.log(
+            "LC2Git: Accepted submission is already being processed."
+        );
+
+        return;
+
+    }
+
+
+    processingAcceptedSubmission =
+        true;
+
 
     waitingForSubmission =
         false;
@@ -554,7 +706,7 @@ function handleAcceptedSubmission() {
 
 
     // ========================================
-    // ASK BACKGROUND TO ACCESS MONACO
+    // EXTRACT MONACO EDITOR DATA
     // ========================================
 
     chrome.runtime.sendMessage(
@@ -563,7 +715,11 @@ function handleAcceptedSubmission() {
                 "EXTRACT_EDITOR_DATA"
         },
 
-        (editorData) => {
+        async (editorData) => {
+
+            // ====================================
+            // RUNTIME ERROR
+            // ====================================
 
             if (
                 chrome.runtime.lastError
@@ -573,6 +729,10 @@ function handleAcceptedSubmission() {
                     "LC2Git: Editor extraction error:",
                     chrome.runtime.lastError
                 );
+
+
+                processingAcceptedSubmission =
+                    false;
 
 
                 chrome.storage.local.set({
@@ -594,6 +754,10 @@ function handleAcceptedSubmission() {
             }
 
 
+            // ====================================
+            // INVALID EDITOR DATA
+            // ====================================
+
             if (
                 !editorData ||
                 !editorData.success
@@ -603,6 +767,10 @@ function handleAcceptedSubmission() {
                     "LC2Git: Could not extract solution.",
                     editorData?.message
                 );
+
+
+                processingAcceptedSubmission =
+                    false;
 
 
                 chrome.storage.local.set({
@@ -639,6 +807,10 @@ function handleAcceptedSubmission() {
                 );
 
 
+                processingAcceptedSubmission =
+                    false;
+
+
                 return;
 
             }
@@ -651,6 +823,10 @@ function handleAcceptedSubmission() {
             const code =
                 editorData.code;
 
+
+            // ====================================
+            // LOG EXTRACTED DATA
+            // ====================================
 
             console.log(
                 "LC2Git: Monaco code extracted."
@@ -682,124 +858,328 @@ function handleAcceptedSubmission() {
 
 
             // ====================================
-            // SAVE SOLUTION
+            // CREATE SOLUTION FINGERPRINT
             // ====================================
 
-            chrome.storage.local.set({
+            try {
 
-                currentProblem:
-                    problem,
+                currentSubmissionFingerprint =
+                    await createSolutionFingerprint(
+                        problem,
+                        language,
+                        code
+                    );
 
-                language:
-                    language,
 
-                code:
-                    code,
+                console.log(
+                    "LC2Git: Submission fingerprint:",
+                    currentSubmissionFingerprint
+                );
 
-                waitingForSubmission:
-                    false,
+            } catch (error) {
 
-                submissionStatus:
-                    "Accepted",
+                console.error(
+                    "LC2Git: Failed to create submission fingerprint:",
+                    error
+                );
 
-                accepted:
-                    true
 
-            })
-            .then(() => {
+                processingAcceptedSubmission =
+                    false;
+
+
+                return;
+
+            }
+
+
+            // ====================================
+            // CHECK LOCAL DUPLICATE
+            // ====================================
+
+            const duplicateData =
+                await chrome.storage.local.get([
+                    "processedSubmissionFingerprints"
+                ]);
+
+
+            const processedFingerprints =
+                Array.isArray(
+                    duplicateData.processedSubmissionFingerprints
+                )
+                    ? duplicateData.processedSubmissionFingerprints
+                    : [];
+
+
+            console.log(
+                "LC2Git: Stored fingerprints:",
+                processedFingerprints.length
+            );
+
+
+            console.log(
+                "LC2Git: Current fingerprint:",
+                currentSubmissionFingerprint
+            );
+
+
+            // ====================================
+            // DUPLICATE FOUND
+            // ====================================
+
+            if (
+                processedFingerprints.includes(
+                    currentSubmissionFingerprint
+                )
+            ) {
+
+                console.log(
+                    "🔁 LC2Git: Duplicate submission detected locally. Skipping GitHub sync."
+                );
+
+
+                processingAcceptedSubmission =
+                    false;
+
+
+                return;
+
+            }
+
+
+            // ====================================
+            // SAVE SOLUTION TO EXTENSION STORAGE
+            // ====================================
+
+            try {
+
+                await chrome.storage.local.set({
+
+                    currentProblem:
+                        problem,
+
+                    language:
+                        language,
+
+                    code:
+                        code,
+
+                    waitingForSubmission:
+                        false,
+
+                    submissionStatus:
+                        "Accepted",
+
+                    accepted:
+                        true
+
+                });
+
 
                 console.log(
                     "LC2Git: Solution saved to extension storage."
                 );
 
+            } catch (error) {
 
-                // ====================================
-                // AUTOMATIC GITHUB SYNC
-                // ====================================
-
-                console.log(
-                    "LC2Git: Starting automatic GitHub sync..."
+                console.error(
+                    "LC2Git: Failed to save solution:",
+                    error
                 );
 
 
-                chrome.runtime.sendMessage(
-                    {
-                        type:
-                            "SYNC_SOLUTION"
-                    },
+                processingAcceptedSubmission =
+                    false;
 
-                    (response) => {
 
-                        if (
+                return;
+
+            }
+
+
+            // ====================================
+            // AUTOMATIC GITHUB SYNC
+            // ====================================
+
+            console.log(
+                "LC2Git: Starting automatic GitHub sync..."
+            );
+
+
+            chrome.runtime.sendMessage(
+                {
+                    type:
+                        "SYNC_SOLUTION"
+                },
+
+                async (response) => {
+
+                    // ====================================
+                    // SYNC RUNTIME ERROR
+                    // ====================================
+
+                    if (
+                        chrome.runtime.lastError
+                    ) {
+
+                        console.error(
+                            "LC2Git: GitHub sync error:",
                             chrome.runtime.lastError
-                        ) {
-
-                            console.error(
-                                "LC2Git: GitHub sync error:",
-                                chrome.runtime.lastError
-                            );
+                        );
 
 
-                            return;
+                        processingAcceptedSubmission =
+                            false;
 
-                        }
 
+                        return;
+
+                    }
+
+
+                    // ====================================
+                    // SUCCESSFUL RESPONSE
+                    // ====================================
+
+                    if (
+                        response &&
+                        response.success
+                    ) {
+
+                        // ====================================
+                        // SAVE PROCESSED FINGERPRINT
+                        // ====================================
 
                         if (
-                            response &&
-                            response.success
+                            currentSubmissionFingerprint
                         ) {
 
-                            if (
-                                response.alreadySynced
-                            ) {
+                            try {
 
-                                console.log(
-                                    "LC2Git: Solution was already synced."
-                                );
-
-                            } else {
-
-                                console.log(
-                                    "🎉 LC2Git: Solution automatically committed to GitHub!"
-                                );
+                                const existingData =
+                                    await chrome.storage.local.get([
+                                        "processedSubmissionFingerprints"
+                                    ]);
 
 
-                                console.log(
-                                    "LC2Git: GitHub path:",
-                                    response.path
-                                );
+                                const fingerprints =
+                                    Array.isArray(
+                                        existingData.processedSubmissionFingerprints
+                                    )
+                                        ? existingData.processedSubmissionFingerprints
+                                        : [];
 
 
-                                console.log(
-                                    "LC2Git: Commit SHA:",
-                                    response.commitSha
+                                if (
+                                    !fingerprints.includes(
+                                        currentSubmissionFingerprint
+                                    )
+                                ) {
+
+                                    fingerprints.unshift(
+                                        currentSubmissionFingerprint
+                                    );
+
+
+                                    await chrome.storage.local.set({
+
+                                        processedSubmissionFingerprints:
+                                            fingerprints.slice(
+                                                0,
+                                                50
+                                            )
+
+                                    });
+
+
+                                    console.log(
+                                        "LC2Git: Submission fingerprint saved locally."
+                                    );
+
+                                }
+
+                            } catch (error) {
+
+                                console.error(
+                                    "LC2Git: Failed to save submission fingerprint:",
+                                    error
                                 );
 
                             }
 
+                        }
+
+
+                        // ====================================
+                        // ALREADY SYNCED
+                        // ====================================
+
+                        if (
+                            response.alreadySynced
+                        ) {
+
+                            console.log(
+                                "LC2Git: Solution was already synced."
+                            );
+
                         } else {
 
-                            console.error(
-                                "LC2Git: Automatic GitHub sync failed:",
-                                response?.message
+                            // ====================================
+                            // NEW GITHUB COMMIT
+                            // ====================================
+
+                            console.log(
+                                "🎉 LC2Git: Solution automatically committed to GitHub!"
+                            );
+
+
+                            console.log(
+                                "LC2Git: GitHub path:",
+                                response.path
+                            );
+
+
+                            console.log(
+                                "LC2Git: Commit SHA:",
+                                response.commitSha
                             );
 
                         }
 
-                    }
-                );
+                    } else {
 
-            });
+                        // ====================================
+                        // SYNC FAILED
+                        // ====================================
+
+                        console.error(
+                            "LC2Git: Automatic GitHub sync failed:",
+                            response?.message
+                        );
+
+                    }
+
+
+                    // ====================================
+                    // RELEASE PROCESSING LOCK
+                    // ====================================
+
+                    processingAcceptedSubmission =
+                        false;
+
+                }
+
+            );
 
         }
+
     );
 
 }
 
 
 // ============================================
-// 11. CHECK FOR NEW ACCEPTED RESULT
+// 12. CHECK FOR NEW ACCEPTED RESULT
 // ============================================
 
 function checkForNewAcceptance() {
@@ -830,7 +1210,7 @@ function checkForNewAcceptance() {
 
 
 // ============================================
-// 12. WATCH LEETCODE DOM
+// 13. WATCH LEETCODE DOM
 // ============================================
 
 const submissionObserver =
@@ -854,7 +1234,7 @@ submissionObserver.observe(
 
 
 // ============================================
-// 13. PERIODIC SUBMISSION CHECK
+// 14. PERIODIC SUBMISSION CHECK
 // ============================================
 
 setInterval(() => {
@@ -865,7 +1245,7 @@ setInterval(() => {
 
 
 // ============================================
-// 14. READY
+// 15. READY
 // ============================================
 
 console.log(
