@@ -386,6 +386,23 @@ let currentSubmissionFingerprint =
 
 
 // ============================================
+// PENDING SYNC RETRY CONFIGURATION
+// ============================================
+
+const MAX_SYNC_RETRIES =
+    3;
+
+const SYNC_RETRY_DELAY =
+    30000;
+
+let syncRetryCount =
+    0;
+
+let retryTimerId =
+    null;
+
+
+// ============================================
 // 7. COUNT ACCEPTED RESULTS
 // ============================================
 
@@ -623,7 +640,389 @@ document.addEventListener(
 
 
 // ============================================
-// 11. HANDLE ACCEPTED SUBMISSION
+// 11. SAVE PROCESSED FINGERPRINT
+// ============================================
+
+async function saveProcessedFingerprint(
+    fingerprint
+) {
+
+    if (!fingerprint) {
+
+        return;
+
+    }
+
+
+    try {
+
+        const existingData =
+            await chrome.storage.local.get([
+                "processedSubmissionFingerprints"
+            ]);
+
+
+        const fingerprints =
+            Array.isArray(
+                existingData.processedSubmissionFingerprints
+            )
+                ? existingData.processedSubmissionFingerprints
+                : [];
+
+
+        if (
+            !fingerprints.includes(
+                fingerprint
+            )
+        ) {
+
+            fingerprints.unshift(
+                fingerprint
+            );
+
+
+            await chrome.storage.local.set({
+
+                processedSubmissionFingerprints:
+                    fingerprints.slice(
+                        0,
+                        50
+                    )
+
+            });
+
+
+            console.log(
+                "LC2Git: Submission fingerprint saved locally."
+            );
+
+        }
+
+    } catch (error) {
+
+        console.error(
+            "LC2Git: Failed to save submission fingerprint:",
+            error
+        );
+
+    }
+
+}
+
+
+// ============================================
+// 12. CLEAR PENDING SYNC
+// ============================================
+
+async function clearPendingSync() {
+
+    try {
+
+        await chrome.storage.local.set({
+
+            pendingSync:
+                false,
+
+            pendingSyncFingerprint:
+                null
+
+        });
+
+
+        console.log(
+            "LC2Git: Pending sync cleared."
+        );
+
+    } catch (error) {
+
+        console.error(
+            "LC2Git: Failed to clear pending sync:",
+            error
+        );
+
+    }
+
+}
+
+
+// ============================================
+// 13. RETRY PENDING SYNC
+// ============================================
+
+async function retryPendingSync() {
+
+    // ========================================
+    // MAX RETRIES
+    // ========================================
+
+    if (
+        syncRetryCount >=
+        MAX_SYNC_RETRIES
+    ) {
+
+        console.log(
+            "LC2Git: Maximum sync retries reached."
+        );
+
+        return;
+
+    }
+
+
+    // ========================================
+    // GET PENDING DATA
+    // ========================================
+
+    let pendingData;
+
+
+    try {
+
+        pendingData =
+            await chrome.storage.local.get([
+                "pendingSync",
+                "pendingSyncFingerprint",
+                "currentProblem",
+                "code",
+                "language"
+            ]);
+
+    } catch (error) {
+
+        console.error(
+            "LC2Git: Could not read pending sync data:",
+            error
+        );
+
+        return;
+
+    }
+
+
+    // ========================================
+    // NO PENDING SYNC
+    // ========================================
+
+    if (
+        pendingData.pendingSync !== true
+    ) {
+
+        return;
+
+    }
+
+
+    // ========================================
+    // VALIDATE PENDING DATA
+    // ========================================
+
+    if (
+        !pendingData.currentProblem ||
+        !pendingData.code ||
+        !pendingData.language
+    ) {
+
+        console.error(
+            "LC2Git: Pending sync data is incomplete."
+        );
+
+        return;
+
+    }
+
+
+    // ========================================
+    // INCREMENT RETRY COUNT
+    // ========================================
+
+    syncRetryCount += 1;
+
+
+    console.log(
+        `LC2Git: Retrying pending sync (${syncRetryCount}/${MAX_SYNC_RETRIES})...`
+    );
+
+
+    // ========================================
+    // SEND SYNC REQUEST
+    // ========================================
+
+    chrome.runtime.sendMessage(
+        {
+            type:
+                "SYNC_SOLUTION"
+        },
+
+        async (response) => {
+
+            // ====================================
+            // SERVICE WORKER ERROR
+            // ====================================
+
+            if (
+                chrome.runtime.lastError
+            ) {
+
+                console.error(
+                    "LC2Git: Pending sync retry failed:",
+                    chrome.runtime.lastError
+                );
+
+
+                scheduleNextRetry();
+
+                return;
+
+            }
+
+
+            // ====================================
+            // SUCCESS
+            // ====================================
+
+            if (
+                response &&
+                response.success
+            ) {
+
+                console.log(
+                    "LC2Git: Pending sync retry succeeded."
+                );
+
+
+                // --------------------------------
+                // SAVE FINGERPRINT
+                // --------------------------------
+
+                await saveProcessedFingerprint(
+                    pendingData.pendingSyncFingerprint
+                );
+
+
+                // --------------------------------
+                // CLEAR PENDING STATE
+                // --------------------------------
+
+                await clearPendingSync();
+
+
+                // --------------------------------
+                // RESET RETRY COUNT
+                // --------------------------------
+
+                syncRetryCount =
+                    0;
+
+
+                if (
+                    response.alreadySynced
+                ) {
+
+                    console.log(
+                        "LC2Git: Pending solution was already synced."
+                    );
+
+                } else {
+
+                    console.log(
+                        "🎉 LC2Git: Pending solution automatically committed to GitHub!"
+                    );
+
+
+                    console.log(
+                        "LC2Git: GitHub path:",
+                        response.path
+                    );
+
+
+                    console.log(
+                        "LC2Git: Commit SHA:",
+                        response.commitSha
+                    );
+
+                }
+
+
+                return;
+
+            }
+
+
+            // ====================================
+            // SYNC FAILED
+            // ====================================
+
+            console.error(
+                "LC2Git: Pending sync retry failed:",
+                response?.message
+            );
+
+
+            scheduleNextRetry();
+
+        }
+
+    );
+
+}
+
+
+// ============================================
+// 14. SCHEDULE NEXT RETRY
+// ============================================
+
+function scheduleNextRetry() {
+
+    if (
+        syncRetryCount >=
+        MAX_SYNC_RETRIES
+    ) {
+
+        console.log(
+            "LC2Git: No more pending sync retries."
+        );
+
+        return;
+
+    }
+
+
+    // Prevent multiple retry timers.
+
+    if (
+        retryTimerId !== null
+    ) {
+
+        return;
+
+    }
+
+
+    console.log(
+        `LC2Git: Next retry in ${SYNC_RETRY_DELAY / 1000} seconds.`
+    );
+
+
+    retryTimerId =
+        setTimeout(
+            () => {
+
+                retryTimerId =
+                    null;
+
+
+                retryPendingSync();
+
+            },
+
+            SYNC_RETRY_DELAY
+        );
+
+}
+
+
+// ============================================
+// 15. HANDLE ACCEPTED SUBMISSION
 // ============================================
 
 async function handleAcceptedSubmission() {
@@ -681,6 +1080,7 @@ async function handleAcceptedSubmission() {
                     "LC2Git: Editor extraction error:",
                     chrome.runtime.lastError
                 );
+
 
                 processingAcceptedSubmission =
                     false;
@@ -783,20 +1183,24 @@ async function handleAcceptedSubmission() {
                 "LC2Git: Monaco code extracted."
             );
 
+
             console.log(
                 "LC2Git: Language:",
                 language
             );
+
 
             console.log(
                 "LC2Git: Problem number:",
                 problem.number
             );
 
+
             console.log(
                 "LC2Git: Problem title:",
                 problem.title
             );
+
 
             console.log(
                 "LC2Git: Code:",
@@ -921,7 +1325,7 @@ async function handleAcceptedSubmission() {
                         true,
 
                     // ====================================
-                    // NEW: PENDING SYNC STATE
+                    // PENDING SYNC STATE
                     // ====================================
 
                     pendingSync:
@@ -941,7 +1345,6 @@ async function handleAcceptedSubmission() {
                 console.log(
                     "LC2Git: Pending sync state saved."
                 );
-
 
             } catch (error) {
 
@@ -991,11 +1394,16 @@ async function handleAcceptedSubmission() {
                         );
 
 
-                        // Keep pendingSync = true
-                        // so it can be retried later.
+                        console.log(
+                            "LC2Git: Pending sync retained for retry."
+                        );
+
 
                         processingAcceptedSubmission =
                             false;
+
+
+                        scheduleNextRetry();
 
 
                         return;
@@ -1016,96 +1424,24 @@ async function handleAcceptedSubmission() {
                         // SAVE PROCESSED FINGERPRINT
                         // ====================================
 
-                        if (
+                        await saveProcessedFingerprint(
                             currentSubmissionFingerprint
-                        ) {
-
-                            try {
-
-                                const existingData =
-                                    await chrome.storage.local.get([
-                                        "processedSubmissionFingerprints"
-                                    ]);
-
-
-                                const fingerprints =
-                                    Array.isArray(
-                                        existingData.processedSubmissionFingerprints
-                                    )
-                                        ? existingData.processedSubmissionFingerprints
-                                        : [];
-
-
-                                if (
-                                    !fingerprints.includes(
-                                        currentSubmissionFingerprint
-                                    )
-                                ) {
-
-                                    fingerprints.unshift(
-                                        currentSubmissionFingerprint
-                                    );
-
-
-                                    await chrome.storage.local.set({
-
-                                        processedSubmissionFingerprints:
-                                            fingerprints.slice(
-                                                0,
-                                                50
-                                            )
-
-                                    });
-
-
-                                    console.log(
-                                        "LC2Git: Submission fingerprint saved locally."
-                                    );
-
-                                }
-
-                            } catch (error) {
-
-                                console.error(
-                                    "LC2Git: Failed to save submission fingerprint:",
-                                    error
-                                );
-
-                            }
-
-                        }
+                        );
 
 
                         // ====================================
                         // CLEAR PENDING SYNC
                         // ====================================
 
-                        try {
-
-                            await chrome.storage.local.set({
-
-                                pendingSync:
-                                    false,
-
-                                pendingSyncFingerprint:
-                                    null
-
-                            });
+                        await clearPendingSync();
 
 
-                            console.log(
-                                "LC2Git: Pending sync cleared."
-                            );
+                        // ====================================
+                        // RESET RETRY COUNT
+                        // ====================================
 
-
-                        } catch (error) {
-
-                            console.error(
-                                "LC2Git: Failed to clear pending sync:",
-                                error
-                            );
-
-                        }
+                        syncRetryCount =
+                            0;
 
 
                         // ====================================
@@ -1156,13 +1492,12 @@ async function handleAcceptedSubmission() {
                         );
 
 
-                        // IMPORTANT:
-                        // pendingSync remains TRUE.
-                        // Fingerprint is NOT saved as processed.
-
                         console.log(
                             "LC2Git: Pending sync retained for retry."
                         );
+
+
+                        scheduleNextRetry();
 
                     }
 
@@ -1186,7 +1521,7 @@ async function handleAcceptedSubmission() {
 
 
 // ============================================
-// 12. CHECK FOR NEW ACCEPTED RESULT
+// 16. CHECK FOR NEW ACCEPTED RESULT
 // ============================================
 
 function checkForNewAcceptance() {
@@ -1217,7 +1552,7 @@ function checkForNewAcceptance() {
 
 
 // ============================================
-// 13. WATCH LEETCODE DOM
+// 17. WATCH LEETCODE DOM
 // ============================================
 
 const submissionObserver =
@@ -1241,7 +1576,7 @@ submissionObserver.observe(
 
 
 // ============================================
-// 14. PERIODIC SUBMISSION CHECK
+// 18. PERIODIC SUBMISSION CHECK
 // ============================================
 
 setInterval(() => {
@@ -1252,7 +1587,26 @@ setInterval(() => {
 
 
 // ============================================
-// 15. READY
+// 19. CHECK FOR EXISTING PENDING SYNC
+// ============================================
+
+setTimeout(
+    () => {
+
+        console.log(
+            "LC2Git: Checking for pending sync..."
+        );
+
+
+        retryPendingSync();
+
+    },
+    5000
+);
+
+
+// ============================================
+// 20. READY
 // ============================================
 
 console.log(
