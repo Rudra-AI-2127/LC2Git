@@ -2,25 +2,16 @@
 // LC2Git - Background Service Worker
 // ============================================
 
-const GITHUB_API = "https://api.github.com";
-
-const OWNER = "Rudra-AI-2127";
-const REPO = "leetcode-solutions";
-
-const API_VERSION = "2026-03-10";
-
 
 // ============================================
-// EXTENSION INSTALLED
+// GITHUB CONFIGURATION
 // ============================================
 
-chrome.runtime.onInstalled.addListener(() => {
+const GITHUB_API =
+    "https://api.github.com";
 
-    console.log(
-        "LC2Git installed successfully."
-    );
-
-});
+const DEFAULT_REPOSITORY =
+    "Rudra-AI-2127/leetcode-solutions";
 
 
 // ============================================
@@ -30,16 +21,16 @@ chrome.runtime.onInstalled.addListener(() => {
 async function getGitHubToken() {
 
     const data =
-        await chrome.storage.local.get([
-            "githubToken"
-        ]);
+        await chrome.storage.local.get(
+            ["githubToken"]
+        );
 
     return data.githubToken || null;
 }
 
 
 // ============================================
-// GITHUB REQUEST
+// GITHUB API REQUEST
 // ============================================
 
 async function githubRequest(
@@ -54,7 +45,7 @@ async function githubRequest(
     if (!token) {
 
         throw new Error(
-            "GitHub is not connected."
+            "GitHub token not found."
         );
 
     }
@@ -69,14 +60,17 @@ async function githubRequest(
 
                 headers: {
 
-                    "Accept":
-                        "application/vnd.github+json",
-
                     "Authorization":
                         `Bearer ${token}`,
 
+                    "Accept":
+                        "application/vnd.github+json",
+
+                    "Content-Type":
+                        "application/json",
+
                     "X-GitHub-Api-Version":
-                        API_VERSION,
+                        "2022-11-28",
 
                     ...(options.headers || {})
 
@@ -86,31 +80,43 @@ async function githubRequest(
         );
 
 
+    const text =
+        await response.text();
+
+
     let data = null;
 
 
     try {
 
         data =
-            await response.json();
+            text
+                ? JSON.parse(text)
+                : null;
 
     } catch {
 
-        data = null;
+        data = text;
+
+    }
+
+
+    if (!response.ok) {
+
+        throw new Error(
+
+            data?.message ||
+            `GitHub API error: ${response.status}`
+
+        );
 
     }
 
 
     return {
 
-        ok:
-            response.ok,
-
-        status:
-            response.status,
-
-        data:
-            data
+        response,
+        data
 
     };
 
@@ -123,122 +129,17 @@ async function githubRequest(
 
 async function connectGitHub(token) {
 
-    if (
-        !token ||
-        token.trim().length === 0
-    ) {
-
-        return {
-
-            success: false,
-
-            message:
-                "GitHub token is required."
-
-        };
-
-    }
-
-
-    token =
-        token.trim();
-
-
     try {
 
-        // ------------------------------------
-        // Verify GitHub user
-        // ------------------------------------
-
-        const userResult =
-            await fetch(
-                `${GITHUB_API}/user`,
-                {
-
-                    method:
-                        "GET",
-
-                    headers: {
-
-                        "Accept":
-                            "application/vnd.github+json",
-
-                        "Authorization":
-                            `Bearer ${token}`,
-
-                        "X-GitHub-Api-Version":
-                            API_VERSION
-
-                    }
-
-                }
+        const result =
+            await githubRequest(
+                "/user"
             );
 
 
-        if (!userResult.ok) {
+        const username =
+            result.data.login;
 
-            return {
-
-                success: false,
-
-                message:
-                    "Invalid GitHub token."
-
-            };
-
-        }
-
-
-        const user =
-            await userResult.json();
-
-
-        // ------------------------------------
-        // Verify repository
-        // ------------------------------------
-
-        const repoResult =
-            await fetch(
-                `${GITHUB_API}/repos/${OWNER}/${REPO}`,
-                {
-
-                    method:
-                        "GET",
-
-                    headers: {
-
-                        "Accept":
-                            "application/vnd.github+json",
-
-                        "Authorization":
-                            `Bearer ${token}`,
-
-                        "X-GitHub-Api-Version":
-                            API_VERSION
-
-                    }
-
-                }
-            );
-
-
-        if (!repoResult.ok) {
-
-            return {
-
-                success: false,
-
-                message:
-                    "Token cannot access the target repository."
-
-            };
-
-        }
-
-
-        // ------------------------------------
-        // Save GitHub connection
-        // ------------------------------------
 
         await chrome.storage.local.set({
 
@@ -249,48 +150,48 @@ async function connectGitHub(token) {
                 true,
 
             githubUsername:
-                user.login,
+                username,
 
             githubRepository:
-                `${OWNER}/${REPO}`
+                DEFAULT_REPOSITORY
 
         });
 
 
         console.log(
-            "LC2Git: GitHub connected successfully."
+            "LC2Git: GitHub connected as",
+            username
         );
 
 
         return {
 
-            success: true,
+            success:
+                true,
 
             username:
-                user.login,
+                username,
 
             repository:
-                `${OWNER}/${REPO}`,
-
-            message:
-                "GitHub connected successfully."
+                DEFAULT_REPOSITORY
 
         };
 
     } catch (error) {
 
         console.error(
-            "LC2Git: GitHub connection error.",
+            "LC2Git: GitHub connection failed:",
             error
         );
 
 
         return {
 
-            success: false,
+            success:
+                false,
 
             message:
-                "Could not connect to GitHub."
+                error.message
 
         };
 
@@ -318,9 +219,15 @@ async function disconnectGitHub() {
     ]);
 
 
+    console.log(
+        "LC2Git: GitHub disconnected."
+    );
+
+
     return {
 
-        success: true
+        success:
+            true
 
     };
 
@@ -328,10 +235,12 @@ async function disconnectGitHub() {
 
 
 // ============================================
-// EXTRACT CODE FROM LEETCODE MONACO
+// EXTRACT EDITOR DATA
 // ============================================
 
-async function extractEditorData(tabId) {
+async function extractEditorData(
+    tabId
+) {
 
     try {
 
@@ -339,8 +248,10 @@ async function extractEditorData(tabId) {
             await chrome.scripting.executeScript({
 
                 target: {
+
                     tabId:
                         tabId
+
                 },
 
                 world:
@@ -348,13 +259,13 @@ async function extractEditorData(tabId) {
 
                 func: () => {
 
-                    // ====================================
-                    // ACCESS LEETCODE PAGE MONACO
-                    // ====================================
+                    // ============================================
+                    // CHECK MONACO
+                    // ============================================
 
                     if (
-                        typeof monaco === "undefined" ||
-                        !monaco.editor
+                        typeof monaco ===
+                        "undefined"
                     ) {
 
                         return {
@@ -363,59 +274,111 @@ async function extractEditorData(tabId) {
                                 false,
 
                             message:
-                                "Monaco is not available in page context."
+                                "Monaco editor not found."
 
                         };
 
                     }
 
 
+                    // ============================================
+                    // GET MONACO MODELS
+                    // ============================================
+
                     const models =
-                        monaco.editor.getModels();
+                        monaco
+                            .editor
+                            .getModels();
+
+
+                    if (
+                        !models ||
+                        models.length === 0
+                    ) {
+
+                        return {
+
+                            success:
+                                false,
+
+                            message:
+                                "No Monaco editor models found."
+
+                        };
+
+                    }
+
+
+                    // ============================================
+                    // FIND CODE MODEL
+                    // ============================================
+
+                    let selectedModel =
+                        null;
 
 
                     for (
                         const model of models
                     ) {
 
-                        const language =
-                            model.getLanguageId();
-
-
-                        // Ignore plaintext
-                        if (
-                            !language ||
-                            language === "plaintext"
-                        ) {
-
-                            continue;
-
-                        }
-
-
-                        const code =
+                        const value =
                             model.getValue();
 
 
                         if (
-                            code &&
-                            code.trim().length > 0
+                            value &&
+                            value.trim().length > 0
                         ) {
 
-                            return {
+                            selectedModel =
+                                model;
 
-                                success:
-                                    true,
-
-                                language:
-                                    language,
-
-                                code:
-                                    code
-
-                            };
+                            break;
 
                         }
+
+                    }
+
+
+                    if (!selectedModel) {
+
+                        return {
+
+                            success:
+                                false,
+
+                            message:
+                                "No code found in Monaco editor."
+
+                        };
+
+                    }
+
+
+                    // ============================================
+                    // GET CODE
+                    // ============================================
+
+                    const code =
+                        selectedModel.getValue();
+
+
+                    // ============================================
+                    // DETECT LANGUAGE
+                    // ============================================
+
+                    let language =
+                        selectedModel
+                            .getLanguageId();
+
+
+                    if (
+                        !language ||
+                        language === "plaintext"
+                    ) {
+
+                        language =
+                            "unknown";
 
                     }
 
@@ -423,10 +386,13 @@ async function extractEditorData(tabId) {
                     return {
 
                         success:
-                            false,
+                            true,
 
-                        message:
-                            "No usable Monaco model found."
+                        code:
+                            code,
+
+                        language:
+                            language
 
                     };
 
@@ -446,7 +412,7 @@ async function extractEditorData(tabId) {
                     false,
 
                 message:
-                    "No result returned from page."
+                    "Could not extract editor data."
 
             };
 
@@ -458,7 +424,7 @@ async function extractEditorData(tabId) {
     } catch (error) {
 
         console.error(
-            "LC2Git: Monaco extraction error:",
+            "LC2Git: Editor extraction failed:",
             error
         );
 
@@ -469,8 +435,7 @@ async function extractEditorData(tabId) {
                 false,
 
             message:
-                error.message ||
-                "Could not extract editor data."
+                error.message
 
         };
 
@@ -480,101 +445,87 @@ async function extractEditorData(tabId) {
 
 
 // ============================================
-// LANGUAGE → FILE EXTENSION
+// GET FILE EXTENSION
 // ============================================
 
 function getFileExtension(language) {
 
+    const lang =
+        String(
+            language || ""
+        ).toLowerCase();
+
+
     const extensions = {
-
-        java:
-            "java",
-
-        Java:
-            "java",
-
-
-        python:
-            "py",
-
-        Python:
-            "py",
-
-
-        cpp:
-            "cpp",
-
-        "C++":
-            "cpp",
-
-
-        c:
-            "c",
-
-        C:
-            "c",
-
 
         javascript:
             "js",
 
-        JavaScript:
-            "js",
-
-
         typescript:
             "ts",
 
-        TypeScript:
-            "ts",
+        python:
+            "py",
 
+        java:
+            "java",
+
+        cpp:
+            "cpp",
+
+        c:
+            "c",
 
         csharp:
             "cs",
 
-        "C#":
-            "cs",
+        "c++":
+            "cpp",
 
+        "c#":
+            "cs",
 
         go:
             "go",
 
-        Go:
-            "go",
-
-
         rust:
             "rs",
-
-        Rust:
-            "rs",
-
 
         kotlin:
             "kt",
 
-        Kotlin:
-            "kt",
-
-
         swift:
             "swift",
-
-        Swift:
-            "swift",
-
 
         php:
             "php",
 
-        PHP:
-            "php"
+        ruby:
+            "rb",
+
+        scala:
+            "scala",
+
+        dart:
+            "dart",
+
+        sql:
+            "sql",
+
+        bash:
+            "sh",
+
+        shell:
+            "sh",
+
+        plaintext:
+            "txt"
 
     };
 
 
     return (
-        extensions[language] ||
+        extensions[lang] ||
         "txt"
     );
 
@@ -585,25 +536,27 @@ function getFileExtension(language) {
 // GET LEETCODE PROBLEM METADATA
 // ============================================
 
-async function getLeetCodeProblemMetadata(slug) {
+async function getLeetCodeProblemMetadata(
+    slug
+) {
+
+    const query = `
+        query questionData($titleSlug: String!) {
+            question(titleSlug: $titleSlug) {
+
+                questionFrontendId
+
+                topicTags {
+                    name
+                    slug
+                }
+
+            }
+        }
+    `;
+
 
     try {
-
-        const query = `
-            query questionData($titleSlug: String!) {
-                question(titleSlug: $titleSlug) {
-
-                    questionFrontendId
-
-                    topicTags {
-                        name
-                        slug
-                    }
-
-                }
-            }
-        `;
-
 
         const response =
             await fetch(
@@ -641,21 +594,9 @@ async function getLeetCodeProblemMetadata(slug) {
 
         if (!response.ok) {
 
-            console.error(
-                "LC2Git: LeetCode metadata request failed:",
-                response.status
+            throw new Error(
+                `LeetCode API error: ${response.status}`
             );
-
-
-            return {
-
-                number:
-                    null,
-
-                topics:
-                    []
-
-            };
 
         }
 
@@ -670,46 +611,28 @@ async function getLeetCodeProblemMetadata(slug) {
 
         if (!question) {
 
-            console.error(
-                "LC2Git: LeetCode question metadata not found."
+            throw new Error(
+                "LeetCode problem metadata not found."
             );
-
-
-            return {
-
-                number:
-                    null,
-
-                topics:
-                    []
-
-            };
 
         }
 
 
         const number =
-            question.questionFrontendId
-                ? Number(
-                    question.questionFrontendId
-                )
-                : null;
+            Number(
+                question.questionFrontendId
+            );
 
 
         const topics =
-            question.topicTags || [];
-
-
-        console.log(
-            "LC2Git: LeetCode problem number:",
-            number
-        );
-
-
-        console.log(
-            "LC2Git: LeetCode topics:",
-            topics
-        );
+            Array.isArray(
+                question.topicTags
+            )
+                ? question.topicTags.map(
+                    topic =>
+                        topic.name
+                )
+                : [];
 
 
         return {
@@ -725,7 +648,7 @@ async function getLeetCodeProblemMetadata(slug) {
     } catch (error) {
 
         console.error(
-            "LC2Git: Could not fetch LeetCode metadata:",
+            "LC2Git: Failed to get LeetCode metadata:",
             error
         );
 
@@ -746,259 +669,199 @@ async function getLeetCodeProblemMetadata(slug) {
 
 
 // ============================================
-// LEETCODE TOPICS → REPOSITORY FOLDER
+// GET TOPIC FOLDER
 // ============================================
 
-function getTopicFolderFromTopics(topics) {
+function getTopicFolderFromTopics(
+    topics
+) {
 
-    const topicNames =
-        topics
-            .map(
+    const topicSet =
+        new Set(
+            topics.map(
                 topic =>
-                    (
-                        topic.name ||
-                        ""
-                    ).toLowerCase()
-            );
+                    String(topic)
+                        .toLowerCase()
+            )
+        );
 
 
-    // ========================================
-    // PRIORITY ORDER
-    // ========================================
+    // ============================================
+    // ARRAYS
+    // ============================================
 
-    const rules = [
-
-        // ====================================
-        // ARRAYS
-        // ====================================
-
-        {
-            folder:
-                "Arrays",
-
-            keywords: [
-                "array"
-            ]
-
-        },
-
-
-        // ====================================
-        // LINKED LIST
-        // ====================================
-
-        {
-            folder:
-                "Linked-List",
-
-            keywords: [
-                "linked list"
-            ]
-
-        },
-
-
-        // ====================================
-        // TREES
-        // ====================================
-
-        {
-            folder:
-                "Trees",
-
-            keywords: [
-                "binary tree",
-                "binary search tree",
-                "tree"
-            ]
-
-        },
-
-
-        // ====================================
-        // GRAPHS
-        // ====================================
-
-        {
-            folder:
-                "Graphs",
-
-            keywords: [
-                "graph"
-            ]
-
-        },
-
-
-        // ====================================
-        // DYNAMIC PROGRAMMING
-        // ====================================
-
-        {
-            folder:
-                "Dynamic-Programming",
-
-            keywords: [
-                "dynamic programming"
-            ]
-
-        },
-
-
-        // ====================================
-        // BACKTRACKING
-        // ====================================
-
-        {
-            folder:
-                "Backtracking",
-
-            keywords: [
-                "backtracking"
-            ]
-
-        },
-
-
-        // ====================================
-        // BINARY SEARCH
-        // ====================================
-
-        {
-            folder:
-                "Binary-Search",
-
-            keywords: [
-                "binary search"
-            ]
-
-        },
-
-
-        // ====================================
-        // HEAP / PRIORITY QUEUE
-        // ====================================
-
-        {
-            folder:
-                "Heap-Priority-Queue",
-
-            keywords: [
-                "heap",
-                "priority queue"
-            ]
-
-        },
-
-
-        // ====================================
-        // STACK / QUEUE
-        // ====================================
-
-        {
-            folder:
-                "Stack-Queue",
-
-            keywords: [
-                "stack",
-                "queue"
-            ]
-
-        },
-
-
-        // ====================================
-        // HASH TABLE
-        // ====================================
-
-        {
-            folder:
-                "Hash-Table",
-
-            keywords: [
-                "hash table"
-            ]
-
-        },
-
-
-        // ====================================
-        // GREEDY
-        // ====================================
-
-        {
-            folder:
-                "Greedy",
-
-            keywords: [
-                "greedy"
-            ]
-
-        },
-
-
-        // ====================================
-        // STRING
-        // ====================================
-
-        {
-            folder:
-                "String",
-
-            keywords: [
-                "string"
-            ]
-
-        },
-
-
-        // ====================================
-        // MATH
-        // ====================================
-
-        {
-            folder:
-                "Math",
-
-            keywords: [
-                "math"
-            ]
-
-        }
-
-    ];
-
-
-    // ========================================
-    // FIND HIGHEST PRIORITY MATCH
-    // ========================================
-
-    for (
-        const rule of rules
+    if (
+        topicSet.has("array")
     ) {
 
-        for (
-            const keyword of rule.keywords
-        ) {
-
-            if (
-                topicNames.includes(
-                    keyword
-                )
-            ) {
-
-                return rule.folder;
-
-            }
-
-        }
+        return "Arrays";
 
     }
 
 
-    // ========================================
+    // ============================================
+    // LINKED LIST
+    // ============================================
+
+    if (
+        topicSet.has("linked list")
+    ) {
+
+        return "Linked-List";
+
+    }
+
+
+    // ============================================
+    // TREES
+    // ============================================
+
+    if (
+        topicSet.has("tree") ||
+        topicSet.has("binary tree") ||
+        topicSet.has("binary search tree")
+    ) {
+
+        return "Trees";
+
+    }
+
+
+    // ============================================
+    // GRAPHS
+    // ============================================
+
+    if (
+        topicSet.has("graph")
+    ) {
+
+        return "Graphs";
+
+    }
+
+
+    // ============================================
+    // DYNAMIC PROGRAMMING
+    // ============================================
+
+    if (
+        topicSet.has("dynamic programming")
+    ) {
+
+        return "Dynamic-Programming";
+
+    }
+
+
+    // ============================================
+    // BACKTRACKING
+    // ============================================
+
+    if (
+        topicSet.has("backtracking")
+    ) {
+
+        return "Backtracking";
+
+    }
+
+
+    // ============================================
+    // BINARY SEARCH
+    // ============================================
+
+    if (
+        topicSet.has("binary search")
+    ) {
+
+        return "Binary-Search";
+
+    }
+
+
+    // ============================================
+    // HEAP / PRIORITY QUEUE
+    // ============================================
+
+    if (
+        topicSet.has("heap") ||
+        topicSet.has("priority queue")
+    ) {
+
+        return "Heap-Priority-Queue";
+
+    }
+
+
+    // ============================================
+    // STACK / QUEUE
+    // ============================================
+
+    if (
+        topicSet.has("stack") ||
+        topicSet.has("queue")
+    ) {
+
+        return "Stack-Queue";
+
+    }
+
+
+    // ============================================
+    // HASH TABLE
+    // ============================================
+
+    if (
+        topicSet.has("hash table")
+    ) {
+
+        return "Hash-Table";
+
+    }
+
+
+    // ============================================
+    // GREEDY
+    // ============================================
+
+    if (
+        topicSet.has("greedy")
+    ) {
+
+        return "Greedy";
+
+    }
+
+
+    // ============================================
+    // STRING
+    // ============================================
+
+    if (
+        topicSet.has("string")
+    ) {
+
+        return "String";
+
+    }
+
+
+    // ============================================
+    // MATH
+    // ============================================
+
+    if (
+        topicSet.has("math")
+    ) {
+
+        return "Math";
+
+    }
+
+
+    // ============================================
     // DEFAULT
-    // ========================================
+    // ============================================
 
     return "Other";
 
@@ -1006,14 +869,14 @@ function getTopicFolderFromTopics(topics) {
 
 
 // ============================================
-// CREATE SAFE FILE NAME
+// CREATE FILE NAME
 // ============================================
 
 function createFileName(problem) {
 
     const number =
         String(
-            problem.number || 0
+            problem.number
         ).padStart(
             4,
             "0"
@@ -1021,15 +884,18 @@ function createFileName(problem) {
 
 
     const slug =
-        (
-            problem.slug ||
-            "solution"
+        String(
+            problem.slug || "solution"
         )
-        .toLowerCase()
-        .replace(
-            /[^a-z0-9-]/g,
-            "-"
-        );
+            .toLowerCase()
+            .replace(
+                /[^a-z0-9]+/g,
+                "-"
+            )
+            .replace(
+                /^-+|-+$/g,
+                ""
+            );
 
 
     return `${number}-${slug}`;
@@ -1038,7 +904,7 @@ function createFileName(problem) {
 
 
 // ============================================
-// BASE64 ENCODING
+// BASE64 ENCODE
 // ============================================
 
 function encodeBase64(text) {
@@ -1048,67 +914,60 @@ function encodeBase64(text) {
             .encode(text);
 
 
-    let binary =
-        "";
-
-
-    const chunkSize =
-        0x8000;
+    let binary = "";
 
 
     for (
-        let i = 0;
-        i < bytes.length;
-        i += chunkSize
+        const byte of bytes
     ) {
-
-        const chunk =
-            bytes.subarray(
-                i,
-                i + chunkSize
-            );
-
 
         binary +=
             String.fromCharCode(
-                ...chunk
+                byte
             );
 
     }
 
 
-    return btoa(
-        binary
-    );
+    return btoa(binary);
 
 }
 
 
 // ============================================
-// BASE64 DECODING
+// BASE64 DECODE
 // ============================================
 
 function decodeBase64(base64) {
 
-    const binary =
-        atob(
-            base64.replace(
-                /\n/g,
-                ""
-            )
+    try {
+
+        const binary =
+            atob(base64);
+
+
+        const bytes =
+            Uint8Array.from(
+                binary,
+                char =>
+                    char.charCodeAt(0)
+            );
+
+
+        return new TextDecoder()
+            .decode(bytes);
+
+    } catch (error) {
+
+        console.error(
+            "LC2Git: Base64 decode failed:",
+            error
         );
 
 
-    const bytes =
-        Uint8Array.from(
-            binary,
-            character =>
-                character.charCodeAt(0)
-        );
+        return "";
 
-
-    return new TextDecoder()
-        .decode(bytes);
+    }
 
 }
 
@@ -1117,76 +976,88 @@ function decodeBase64(base64) {
 // GET EXISTING GITHUB FILE
 // ============================================
 
-async function getExistingFile(path) {
+async function getExistingFile(
+    path
+) {
 
-    const result =
-        await githubRequest(
-            `/repos/${OWNER}/${REPO}/contents/${encodeURIComponent(path)}`,
-            {
-                method:
-                    "GET"
-            }
+    try {
+
+        const connection =
+            await chrome.storage.local.get(
+                [
+                    "githubRepository"
+                ]
+            );
+
+
+        const repository =
+            connection.githubRepository ||
+            DEFAULT_REPOSITORY;
+
+
+        const result =
+            await githubRequest(
+                `/repos/${repository}/contents/${encodeURIComponent(path)}`
+            );
+
+
+        return result.data;
+
+    } catch (error) {
+
+        if (
+            error.message.includes(
+                "Not Found"
+            )
+        ) {
+
+            return null;
+
+        }
+
+
+        console.error(
+            "LC2Git: Failed to check existing file:",
+            error
         );
 
-
-    if (
-        result.status === 404
-    ) {
 
         return null;
 
     }
 
-
-    if (!result.ok) {
-
-        throw new Error(
-            result.data?.message ||
-            "Could not check existing GitHub file."
-        );
-
-    }
-
-
-    return result.data;
-
 }
 
 
 // ============================================
-// SYNC SOLUTION TO GITHUB
+// SYNC SOLUTION
 // ============================================
 
-async function syncSolution() {
+async function syncSolution(
+    problem,
+    code,
+    language
+) {
 
     try {
 
-        // ====================================
-        // GET STORED SOLUTION
-        // ====================================
+        // ============================================
+        // GET CONNECTION STATE
+        // ============================================
 
         const connection =
-            await chrome.storage.local.get([
+            await chrome.storage.local.get(
+                [
+                    "githubConnected",
+                    "githubRepository",
+                    "accepted"
+                ]
+            );
 
-                "githubConnected",
-
-                "currentProblem",
-
-                "language",
-
-                "code",
-
-                "accepted"
-
-            ]);
-
-
-        // ====================================
-        // CHECK GITHUB CONNECTION
-        // ====================================
 
         if (
-            connection.githubConnected !== true
+            connection.githubConnected !==
+            true
         ) {
 
             return {
@@ -1195,19 +1066,16 @@ async function syncSolution() {
                     false,
 
                 message:
-                    "Connect GitHub first."
+                    "GitHub is not connected."
 
             };
 
         }
 
 
-        // ====================================
-        // CHECK ACCEPTED STATUS
-        // ====================================
-
         if (
-            connection.accepted !== true
+            connection.accepted !==
+            true
         ) {
 
             return {
@@ -1216,28 +1084,12 @@ async function syncSolution() {
                     false,
 
                 message:
-                    "No accepted solution is ready to sync."
+                    "Solution has not been accepted."
 
             };
 
         }
 
-
-        const problem =
-            connection.currentProblem;
-
-
-        const language =
-            connection.language;
-
-
-        const code =
-            connection.code;
-
-
-        // ====================================
-        // CHECK SOLUTION DATA
-        // ====================================
 
         if (
             !problem ||
@@ -1250,26 +1102,16 @@ async function syncSolution() {
                     false,
 
                 message:
-                    "Solution data is missing."
+                    "Problem or solution code is missing."
 
             };
 
         }
 
 
-        // ====================================
-        // FILE EXTENSION
-        // ====================================
-
-        const extension =
-            getFileExtension(
-                language
-            );
-
-
-        // ====================================
+        // ============================================
         // GET LEETCODE METADATA
-        // ====================================
+        // ============================================
 
         const metadata =
             await getLeetCodeProblemMetadata(
@@ -1281,9 +1123,9 @@ async function syncSolution() {
             metadata.topics;
 
 
-        // ====================================
-        // USE CANONICAL LEETCODE NUMBER
-        // ====================================
+        // ============================================
+        // USE CANONICAL PROBLEM NUMBER
+        // ============================================
 
         if (
             metadata.number
@@ -1295,37 +1137,11 @@ async function syncSolution() {
         }
 
 
-        // ====================================
-        // FILE NAME
-        // ====================================
+        console.log(
+            "LC2Git: LeetCode problem number:",
+            problem.number
+        );
 
-        const fileName =
-            createFileName(
-                problem
-            );
-
-
-        // ====================================
-        // TOPIC FOLDER
-        // ====================================
-
-        const folder =
-            getTopicFolderFromTopics(
-                topics
-            );
-
-
-        // ====================================
-        // FINAL GITHUB PATH
-        // ====================================
-
-        const path =
-            `${folder}/${fileName}.${extension}`;
-
-
-        // ====================================
-        // LOG INFORMATION
-        // ====================================
 
         console.log(
             "LC2Git: Problem:",
@@ -1347,11 +1163,18 @@ async function syncSolution() {
 
         console.log(
             "LC2Git: Topics:",
-            topics.map(
-                topic =>
-                    topic.name
-            )
+            topics
         );
+
+
+        // ============================================
+        // GET FOLDER
+        // ============================================
+
+        const folder =
+            getTopicFolderFromTopics(
+                topics
+            );
 
 
         console.log(
@@ -1360,27 +1183,43 @@ async function syncSolution() {
         );
 
 
+        // ============================================
+        // GET FILE EXTENSION
+        // ============================================
+
+        const extension =
+            getFileExtension(
+                language
+            );
+
+
+        // ============================================
+        // CREATE FILE NAME
+        // ============================================
+
+        const fileName =
+            createFileName(
+                problem
+            );
+
+
+        // ============================================
+        // CREATE GITHUB PATH
+        // ============================================
+
+        const path =
+            `${folder}/${fileName}.${extension}`;
+
+
         console.log(
             "LC2Git: GitHub path:",
             path
         );
 
 
-        // ====================================
-        // SAVE CORRECTED PROBLEM DATA
-        // ====================================
-
-        await chrome.storage.local.set({
-
-            currentProblem:
-                problem
-
-        });
-
-
-        // ====================================
-        // CHECK EXISTING GITHUB FILE
-        // ====================================
+        // ============================================
+        // GET EXISTING FILE
+        // ============================================
 
         const existingFile =
             await getExistingFile(
@@ -1388,9 +1227,9 @@ async function syncSolution() {
             );
 
 
-        // ====================================
+        // ============================================
         // DUPLICATE PROTECTION
-        // ====================================
+        // ============================================
 
         if (
             existingFile &&
@@ -1400,11 +1239,16 @@ async function syncSolution() {
             const existingCode =
                 decodeBase64(
                     existingFile.content
+                        .replace(
+                            /\n/g,
+                            ""
+                        )
                 );
 
 
             if (
-                existingCode === code
+                existingCode ===
+                code
             ) {
 
                 console.log(
@@ -1433,104 +1277,83 @@ async function syncSolution() {
         }
 
 
-        // ====================================
-        // CREATE GITHUB REQUEST
-        // ====================================
+        // ============================================
+        // GET REPOSITORY
+        // ============================================
 
-        const body = {
+        const repository =
+            connection.githubRepository ||
+            DEFAULT_REPOSITORY;
+
+
+        // ============================================
+        // CREATE COMMIT MESSAGE
+        // ============================================
+
+        const commitMessage =
+            `feat: add ${problem.number}. ${problem.title}`;
+
+
+        // ============================================
+        // PREPARE GITHUB REQUEST
+        // ============================================
+
+        const requestBody = {
 
             message:
-                `feat: add ${problem.number}. ${problem.title}`,
+                commitMessage,
 
             content:
-                encodeBase64(
-                    code
-                )
+                encodeBase64(code)
 
         };
 
 
-        // ====================================
-        // EXISTING FILE REQUIRES SHA
-        // ====================================
+        // ============================================
+        // UPDATE EXISTING FILE
+        // ============================================
 
         if (
-            existingFile
+            existingFile &&
+            existingFile.sha
         ) {
 
-            body.sha =
+            requestBody.sha =
                 existingFile.sha;
 
         }
 
 
-        // ====================================
-        // SEND TO GITHUB
-        // ====================================
+        // ============================================
+        // PUSH TO GITHUB
+        // ============================================
 
         const result =
             await githubRequest(
-                `/repos/${OWNER}/${REPO}/contents/${encodeURIComponent(path)}`,
+                `/repos/${repository}/contents/${encodeURIComponent(path)}`,
                 {
 
                     method:
                         "PUT",
 
-                    headers: {
-
-                        "Content-Type":
-                            "application/json"
-
-                    },
-
                     body:
                         JSON.stringify(
-                            body
+                            requestBody
                         )
 
                 }
             );
 
 
-        // ====================================
-        // HANDLE GITHUB ERROR
-        // ====================================
-
-        if (
-            !result.ok
-        ) {
-
-            console.error(
-                "LC2Git: GitHub API error:",
-                result.data
-            );
-
-
-            return {
-
-                success:
-                    false,
-
-                message:
-                    result.data?.message ||
-                    `GitHub API error (${result.status}).`
-
-            };
-
-        }
-
-
-        // ====================================
+        // ============================================
         // UPDATE LOCAL STATISTICS
-        // ====================================
+        // ============================================
 
         const stats =
             await chrome.storage.local.get([
-
                 "syncedCount",
-
-                "commitCount"
-
+                "commitCount",
+                "syncHistory"
             ]);
 
 
@@ -1546,20 +1369,90 @@ async function syncSolution() {
             ) + 1;
 
 
+        // ============================================
+        // CREATE SYNC HISTORY ENTRY
+        // ============================================
+
+        const historyEntry = {
+
+            problem:
+                problem.title,
+
+            number:
+                problem.number,
+
+            language:
+                language,
+
+            folder:
+                folder,
+
+            path:
+                path,
+
+            commitSha:
+                result.data?.commit?.sha ||
+                null,
+
+            timestamp:
+                new Date().toISOString()
+
+        };
+
+
+        // ============================================
+        // GET EXISTING HISTORY
+        // ============================================
+
+        const syncHistory =
+            Array.isArray(
+                stats.syncHistory
+            )
+                ? stats.syncHistory
+                : [];
+
+
+        // ============================================
+        // ADD NEW ENTRY TO FRONT
+        // ============================================
+
+        syncHistory.unshift(
+            historyEntry
+        );
+
+
+        // ============================================
+        // KEEP LAST 20 SYNCS
+        // ============================================
+
+        const limitedHistory =
+            syncHistory.slice(
+                0,
+                20
+            );
+
+
+        // ============================================
+        // SAVE STATISTICS + HISTORY
+        // ============================================
+
         await chrome.storage.local.set({
 
             syncedCount:
                 syncedCount,
 
             commitCount:
-                commitCount
+                commitCount,
+
+            syncHistory:
+                limitedHistory
 
         });
 
 
-        // ====================================
+        // ============================================
         // SUCCESS
-        // ====================================
+        // ============================================
 
         console.log(
             "🎉 LC2Git: Solution synced to GitHub!"
@@ -1575,6 +1468,11 @@ async function syncSolution() {
         console.log(
             "LC2Git: Commit SHA:",
             result.data?.commit?.sha
+        );
+
+
+        console.log(
+            "LC2Git: Sync history saved."
         );
 
 
@@ -1601,7 +1499,7 @@ async function syncSolution() {
     } catch (error) {
 
         console.error(
-            "LC2Git: Sync error:",
+            "LC2Git: Sync failed:",
             error
         );
 
@@ -1612,8 +1510,7 @@ async function syncSolution() {
                 false,
 
             message:
-                error.message ||
-                "Could not sync solution."
+                error.message
 
         };
 
@@ -1633,9 +1530,9 @@ chrome.runtime.onMessage.addListener(
         sendResponse
     ) => {
 
-        // ====================================
+        // ============================================
         // CONNECT GITHUB
-        // ====================================
+        // ============================================
 
         if (
             message.type ===
@@ -1645,187 +1542,11 @@ chrome.runtime.onMessage.addListener(
             connectGitHub(
                 message.token
             )
-            .then(
-                sendResponse
-            )
-            .catch(
-                error => {
-
-                    console.error(
-                        error
-                    );
-
-
-                    sendResponse({
-
-                        success:
-                            false,
-
-                        message:
-                            "Unexpected GitHub error."
-
-                    });
-
-                }
-            );
-
-
-            return true;
-
-        }
-
-
-        // ====================================
-        // DISCONNECT GITHUB
-        // ====================================
-
-        if (
-            message.type ===
-            "DISCONNECT_GITHUB"
-        ) {
-
-            disconnectGitHub()
-                .then(
-                    sendResponse
-                );
-
-
-            return true;
-
-        }
-
-
-        // ====================================
-        // GET GITHUB STATUS
-        // ====================================
-
-        if (
-            message.type ===
-            "GET_GITHUB_STATUS"
-        ) {
-
-            chrome.storage.local.get([
-
-                "githubConnected",
-
-                "githubUsername",
-
-                "githubRepository"
-
-            ])
-            .then(
-                data => {
-
-                    sendResponse({
-
-                        success:
-                            true,
-
-                        connected:
-                            data.githubConnected === true,
-
-                        username:
-                            data.githubUsername ||
-                            null,
-
-                        repository:
-                            data.githubRepository ||
-                            null
-
-                    });
-
-                }
-            );
-
-
-            return true;
-
-        }
-
-
-        // ====================================
-        // EXTRACT EDITOR DATA
-        // ====================================
-
-        if (
-            message.type ===
-            "EXTRACT_EDITOR_DATA"
-        ) {
-
-            if (
-                !sender.tab ||
-                !sender.tab.id
-            ) {
-
-                sendResponse({
-
-                    success:
-                        false,
-
-                    message:
-                        "No LeetCode tab found."
-
-                });
-
-
-                return true;
-
-            }
-
-
-            extractEditorData(
-                sender.tab.id
-            )
-            .then(
-                sendResponse
-            )
-            .catch(
-                error => {
-
-                    console.error(
-                        error
-                    );
-
-
-                    sendResponse({
-
-                        success:
-                            false,
-
-                        message:
-                            error.message
-
-                    });
-
-                }
-            );
-
-
-            return true;
-
-        }
-
-
-        // ====================================
-        // SYNC SOLUTION
-        // ====================================
-
-        if (
-            message.type ===
-            "SYNC_SOLUTION"
-        ) {
-
-            syncSolution()
                 .then(
                     sendResponse
                 )
                 .catch(
                     error => {
-
-                        console.error(
-                            error
-                        );
-
 
                         sendResponse({
 
@@ -1833,7 +1554,7 @@ chrome.runtime.onMessage.addListener(
                                 false,
 
                             message:
-                                "Unexpected sync error."
+                                error.message
 
                         });
 
@@ -1845,5 +1566,286 @@ chrome.runtime.onMessage.addListener(
 
         }
 
+
+        // ============================================
+        // DISCONNECT GITHUB
+        // ============================================
+
+        if (
+            message.type ===
+            "DISCONNECT_GITHUB"
+        ) {
+
+            disconnectGitHub()
+                .then(
+                    sendResponse
+                )
+                .catch(
+                    error => {
+
+                        sendResponse({
+
+                            success:
+                                false,
+
+                            message:
+                                error.message
+
+                        });
+
+                    }
+                );
+
+
+            return true;
+
+        }
+
+
+        // ============================================
+        // GET GITHUB STATUS
+        // ============================================
+
+        if (
+            message.type ===
+            "GET_GITHUB_STATUS"
+        ) {
+
+            chrome.storage.local
+                .get([
+                    "githubConnected",
+                    "githubUsername",
+                    "githubRepository"
+                ])
+                .then(
+                    data => {
+
+                        sendResponse({
+
+                            success:
+                                true,
+
+                            connected:
+                                data.githubConnected ===
+                                true,
+
+                            username:
+                                data.githubUsername ||
+                                null,
+
+                            repository:
+                                data.githubRepository ||
+                                DEFAULT_REPOSITORY
+
+                        });
+
+                    }
+                )
+                .catch(
+                    error => {
+
+                        sendResponse({
+
+                            success:
+                                false,
+
+                            message:
+                                error.message
+
+                        });
+
+                    }
+                );
+
+
+            return true;
+
+        }
+
+
+        // ============================================
+        // EXTRACT EDITOR DATA
+        // ============================================
+
+        if (
+            message.type ===
+            "EXTRACT_EDITOR_DATA"
+        ) {
+
+            const tabId =
+                sender.tab?.id;
+
+
+            if (!tabId) {
+
+                sendResponse({
+
+                    success:
+                        false,
+
+                    message:
+                        "Tab ID not available."
+
+                });
+
+
+                return false;
+
+            }
+
+
+            extractEditorData(
+                tabId
+            )
+                .then(
+                    sendResponse
+                )
+                .catch(
+                    error => {
+
+                        sendResponse({
+
+                            success:
+                                false,
+
+                            message:
+                                error.message
+
+                        });
+
+                    }
+                );
+
+
+            return true;
+
+        }
+
+
+        // ============================================
+        // SYNC SOLUTION
+        // ============================================
+
+        if (
+            message.type ===
+            "SYNC_SOLUTION"
+        ) {
+
+            chrome.storage.local.get(
+                [
+                    "currentProblem",
+                    "code",
+                    "language"
+                ]
+            )
+                .then(
+                    async (storedData) => {
+
+                        const problem =
+                            message.problem ||
+                            storedData.currentProblem;
+
+
+                        const code =
+                            message.code ||
+                            storedData.code;
+
+
+                        const language =
+                            message.language ||
+                            storedData.language;
+
+
+                        console.log(
+                            "LC2Git: Preparing solution sync..."
+                        );
+
+
+                        console.log(
+                            "LC2Git: Problem:",
+                            problem
+                        );
+
+
+                        console.log(
+                            "LC2Git: Language:",
+                            language
+                        );
+
+
+                        console.log(
+                            "LC2Git: Code available:",
+                            !!code
+                        );
+
+
+                        const result =
+                            await syncSolution(
+                                problem,
+                                code,
+                                language
+                            );
+
+
+                        sendResponse(
+                            result
+                        );
+
+                    }
+                )
+                .catch(
+                    error => {
+
+                        console.error(
+                            "LC2Git: Sync message failed:",
+                            error
+                        );
+
+
+                        sendResponse({
+
+                            success:
+                                false,
+
+                            message:
+                                error.message
+
+                        });
+
+                    }
+                );
+
+
+            return true;
+
+        }
+
+
+        // ============================================
+        // UNKNOWN MESSAGE
+        // ============================================
+
+        sendResponse({
+
+            success:
+                false,
+
+            message:
+                "Unknown message type."
+
+        });
+
+
+        return false;
+
     }
+);
+
+
+// ============================================
+// SERVICE WORKER STARTED
+// ============================================
+
+console.log(
+    "🚀 LC2Git background service worker started."
 );
