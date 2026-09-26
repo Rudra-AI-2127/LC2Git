@@ -19,12 +19,10 @@ function getDifficulty() {
         "Hard"
     ];
 
-
     const elements =
         document.querySelectorAll(
             "span, div, button"
         );
-
 
     for (
         const element of elements
@@ -32,7 +30,6 @@ function getDifficulty() {
 
         const text =
             element.innerText?.trim();
-
 
         if (
             difficulties.includes(text)
@@ -43,7 +40,6 @@ function getDifficulty() {
         }
 
     }
-
 
     return "Unknown";
 
@@ -66,12 +62,10 @@ function getProblemNumber() {
             '[data-cy="question-title"]'
         );
 
-
     if (titleElement) {
 
         const titleText =
             titleElement.innerText?.trim();
-
 
         if (titleText) {
 
@@ -79,7 +73,6 @@ function getProblemNumber() {
                 titleText.match(
                     /^(\d+)\s*\./
                 );
-
 
             if (titleMatch) {
 
@@ -102,14 +95,12 @@ function getProblemNumber() {
     const pageTitle =
         document.title?.trim();
 
-
     if (pageTitle) {
 
         const pageTitleMatch =
             pageTitle.match(
                 /^(\d+)\s*\./
             );
-
 
         if (pageTitleMatch) {
 
@@ -131,9 +122,7 @@ function getProblemNumber() {
         ...document.scripts
     ];
 
-
     const candidates = [];
-
 
     for (
         const script of scripts
@@ -141,7 +130,6 @@ function getProblemNumber() {
 
         const text =
             script.textContent;
-
 
         if (
             !text ||
@@ -154,14 +142,12 @@ function getProblemNumber() {
 
         }
 
-
         const matches =
             [
                 ...text.matchAll(
                     /"questionFrontendId"\s*:\s*"(\d+)"/g
                 )
             ];
-
 
         for (
             const match of matches
@@ -177,7 +163,6 @@ function getProblemNumber() {
 
     }
 
-
     if (
         candidates.length > 0
     ) {
@@ -187,7 +172,6 @@ function getProblemNumber() {
         ];
 
     }
-
 
     return null;
 
@@ -203,12 +187,10 @@ function getProblemInfo() {
     const url =
         window.location.href;
 
-
     const match =
         url.match(
             /leetcode\.com\/problems\/([^/]+)/
         );
-
 
     if (!match) {
 
@@ -216,25 +198,20 @@ function getProblemInfo() {
 
     }
 
-
     const slug =
         match[1];
-
 
     const titleElement =
         document.querySelector(
             '[data-cy="question-title"]'
         );
 
-
     let title;
-
 
     if (titleElement) {
 
         title =
             titleElement.innerText.trim();
-
 
         title =
             title.replace(
@@ -258,18 +235,14 @@ function getProblemInfo() {
 
     }
 
-
     const difficulty =
         getDifficulty();
-
 
     const problemNumber =
         getProblemNumber();
 
-
     const cleanUrl =
         `https://leetcode.com/problems/${slug}/`;
-
 
     return {
 
@@ -302,7 +275,6 @@ function saveProblemInfo() {
     const problem =
         getProblemInfo();
 
-
     if (!problem) {
 
         console.log(
@@ -313,16 +285,13 @@ function saveProblemInfo() {
 
     }
 
-
     console.log(
         "LC2Git: Problem detected!"
     );
 
-
     console.log(
         problem
     );
-
 
     chrome.storage.local.set({
 
@@ -333,7 +302,6 @@ function saveProblemInfo() {
 
 }
 
-
 saveProblemInfo();
 
 
@@ -343,20 +311,17 @@ saveProblemInfo();
 
 let lastSlug = null;
 
-
 const problemObserver =
     new MutationObserver(() => {
 
         const problem =
             getProblemInfo();
 
-
         if (!problem) {
 
             return;
 
         }
-
 
         if (
             problem.slug !== lastSlug
@@ -365,14 +330,12 @@ const problemObserver =
             lastSlug =
                 problem.slug;
 
-
             chrome.storage.local.set({
 
                 currentProblem:
                     problem
 
             });
-
 
             console.log(
                 "LC2Git: New problem detected!",
@@ -382,7 +345,6 @@ const problemObserver =
         }
 
     });
-
 
 problemObserver.observe(
     document.body,
@@ -402,7 +364,6 @@ problemObserver.observe(
 
 let waitingForSubmission =
     false;
-
 
 let acceptedCountBeforeSubmit =
     0;
@@ -433,12 +394,10 @@ function getAcceptedCount() {
     const pageText =
         document.body.innerText;
 
-
     const matches =
         pageText.match(
             /Accepted/g
         );
-
 
     return matches
         ? matches.length
@@ -585,14 +544,12 @@ function handleSubmitClick() {
     processingAcceptedSubmission =
         false;
 
-
     currentSubmissionFingerprint =
         null;
 
 
     acceptedCountBeforeSubmit =
         getAcceptedCount();
-
 
     waitingForSubmission =
         true;
@@ -601,7 +558,6 @@ function handleSubmitClick() {
     console.log(
         "LC2Git: Submit detected."
     );
-
 
     console.log(
         "LC2Git: Accepted count before submission:",
@@ -638,17 +594,14 @@ document.addEventListener(
                 "button"
             );
 
-
         if (!button) {
 
             return;
 
         }
 
-
         const text =
             button.innerText?.trim();
-
 
         const aria =
             button.getAttribute(
@@ -695,7 +648,6 @@ async function handleAcceptedSubmission() {
     processingAcceptedSubmission =
         true;
 
-
     waitingForSubmission =
         false;
 
@@ -729,7 +681,6 @@ async function handleAcceptedSubmission() {
                     "LC2Git: Editor extraction error:",
                     chrome.runtime.lastError
                 );
-
 
                 processingAcceptedSubmission =
                     false;
@@ -832,24 +783,20 @@ async function handleAcceptedSubmission() {
                 "LC2Git: Monaco code extracted."
             );
 
-
             console.log(
                 "LC2Git: Language:",
                 language
             );
-
 
             console.log(
                 "LC2Git: Problem number:",
                 problem.number
             );
 
-
             console.log(
                 "LC2Git: Problem title:",
                 problem.title
             );
-
 
             console.log(
                 "LC2Git: Code:",
@@ -948,7 +895,7 @@ async function handleAcceptedSubmission() {
 
 
             // ====================================
-            // SAVE SOLUTION TO EXTENSION STORAGE
+            // SAVE ACCEPTED SOLUTION
             // ====================================
 
             try {
@@ -971,7 +918,17 @@ async function handleAcceptedSubmission() {
                         "Accepted",
 
                     accepted:
-                        true
+                        true,
+
+                    // ====================================
+                    // NEW: PENDING SYNC STATE
+                    // ====================================
+
+                    pendingSync:
+                        true,
+
+                    pendingSyncFingerprint:
+                        currentSubmissionFingerprint
 
                 });
 
@@ -979,6 +936,12 @@ async function handleAcceptedSubmission() {
                 console.log(
                     "LC2Git: Solution saved to extension storage."
                 );
+
+
+                console.log(
+                    "LC2Git: Pending sync state saved."
+                );
+
 
             } catch (error) {
 
@@ -1027,6 +990,9 @@ async function handleAcceptedSubmission() {
                             chrome.runtime.lastError
                         );
 
+
+                        // Keep pendingSync = true
+                        // so it can be retried later.
 
                         processingAcceptedSubmission =
                             false;
@@ -1111,6 +1077,38 @@ async function handleAcceptedSubmission() {
 
 
                         // ====================================
+                        // CLEAR PENDING SYNC
+                        // ====================================
+
+                        try {
+
+                            await chrome.storage.local.set({
+
+                                pendingSync:
+                                    false,
+
+                                pendingSyncFingerprint:
+                                    null
+
+                            });
+
+
+                            console.log(
+                                "LC2Git: Pending sync cleared."
+                            );
+
+
+                        } catch (error) {
+
+                            console.error(
+                                "LC2Git: Failed to clear pending sync:",
+                                error
+                            );
+
+                        }
+
+
+                        // ====================================
                         // ALREADY SYNCED
                         // ====================================
 
@@ -1155,6 +1153,15 @@ async function handleAcceptedSubmission() {
                         console.error(
                             "LC2Git: Automatic GitHub sync failed:",
                             response?.message
+                        );
+
+
+                        // IMPORTANT:
+                        // pendingSync remains TRUE.
+                        // Fingerprint is NOT saved as processed.
+
+                        console.log(
+                            "LC2Git: Pending sync retained for retry."
                         );
 
                     }
