@@ -39,8 +39,11 @@ function handleInvalidExtensionContext() {
 async function safeStorageSet(data) {
 
     if (!isExtensionContextValid()) {
+
         handleInvalidExtensionContext();
+
         return false;
+
     }
 
     try {
@@ -54,7 +57,9 @@ async function safeStorageSet(data) {
         if (
             String(error?.message || "")
                 .toLowerCase()
-                .includes("extension context")
+                .includes(
+                    "extension context"
+                )
         ) {
 
             handleInvalidExtensionContext();
@@ -69,7 +74,9 @@ async function safeStorageSet(data) {
         }
 
         return false;
+
     }
+
 }
 
 
@@ -80,20 +87,27 @@ async function safeStorageSet(data) {
 async function safeStorageGet(keys) {
 
     if (!isExtensionContextValid()) {
+
         handleInvalidExtensionContext();
+
         return null;
+
     }
 
     try {
 
-        return await chrome.storage.local.get(keys);
+        return await chrome.storage.local.get(
+            keys
+        );
 
     } catch (error) {
 
         if (
             String(error?.message || "")
                 .toLowerCase()
-                .includes("extension context")
+                .includes(
+                    "extension context"
+                )
         ) {
 
             handleInvalidExtensionContext();
@@ -108,7 +122,9 @@ async function safeStorageGet(keys) {
         }
 
         return null;
+
     }
+
 }
 
 
@@ -126,10 +142,13 @@ function safeRuntimeMessage(
         handleInvalidExtensionContext();
 
         if (callback) {
+
             callback(null);
+
         }
 
         return false;
+
     }
 
 
@@ -144,8 +163,10 @@ function safeRuntimeMessage(
                 ) {
 
                     const errorMessage =
-                        chrome.runtime.lastError.message ||
+                        chrome.runtime.lastError
+                            .message ||
                         "";
+
 
                     if (
                         errorMessage
@@ -166,16 +187,22 @@ function safeRuntimeMessage(
 
                     }
 
+
                     if (callback) {
+
                         callback(null);
+
                     }
 
                     return;
+
                 }
 
 
                 if (callback) {
+
                     callback(response);
+
                 }
 
             }
@@ -188,7 +215,9 @@ function safeRuntimeMessage(
         if (
             String(error?.message || "")
                 .toLowerCase()
-                .includes("extension context")
+                .includes(
+                    "extension context"
+                )
         ) {
 
             handleInvalidExtensionContext();
@@ -202,12 +231,17 @@ function safeRuntimeMessage(
 
         }
 
+
         if (callback) {
+
             callback(null);
+
         }
 
         return false;
+
     }
+
 }
 
 
@@ -931,6 +965,12 @@ async function clearPendingSync() {
                 false,
 
             pendingSyncFingerprint:
+                null,
+
+            pendingSyncRetryCount:
+                0,
+
+            pendingSyncCreatedAt:
                 null
 
         });
@@ -964,24 +1004,12 @@ async function retryPendingSync() {
     }
 
 
-    if (
-        syncRetryCount >=
-        MAX_SYNC_RETRIES
-    ) {
-
-        console.log(
-            "LC2Git: Maximum sync retries reached."
-        );
-
-        return;
-
-    }
-
-
     const pendingData =
         await safeStorageGet([
             "pendingSync",
             "pendingSyncFingerprint",
+            "pendingSyncRetryCount",
+            "pendingSyncCreatedAt",
             "currentProblem",
             "code",
             "language"
@@ -1004,6 +1032,26 @@ async function retryPendingSync() {
     }
 
 
+    syncRetryCount =
+        Number(
+            pendingData.pendingSyncRetryCount || 0
+        );
+
+
+    if (
+        syncRetryCount >=
+        MAX_SYNC_RETRIES
+    ) {
+
+        console.log(
+            "LC2Git: Maximum persisted sync retries reached."
+        );
+
+        return;
+
+    }
+
+
     if (
         !pendingData.currentProblem ||
         !pendingData.code ||
@@ -1019,7 +1067,32 @@ async function retryPendingSync() {
     }
 
 
+    console.log(
+        "LC2Git: Pending sync found."
+    );
+
+
+    if (
+        pendingData.pendingSyncCreatedAt
+    ) {
+
+        console.log(
+            "LC2Git: Pending sync created at:",
+            pendingData.pendingSyncCreatedAt
+        );
+
+    }
+
+
     syncRetryCount += 1;
+
+
+    await safeStorageSet({
+
+        pendingSyncRetryCount:
+            syncRetryCount
+
+    });
 
 
     console.log(
@@ -1037,6 +1110,16 @@ async function retryPendingSync() {
 
             if (!response) {
 
+                console.log(
+                    "LC2Git: Pending sync could not be completed."
+                );
+
+
+                console.log(
+                    "LC2Git: Pending state will be preserved."
+                );
+
+
                 scheduleNextRetry();
 
                 return;
@@ -1049,7 +1132,7 @@ async function retryPendingSync() {
             ) {
 
                 console.log(
-                    "LC2Git: Pending sync retry succeeded."
+                    "LC2Git: Pending sync recovered successfully."
                 );
 
 
@@ -1058,7 +1141,26 @@ async function retryPendingSync() {
                 );
 
 
-                await clearPendingSync();
+                await safeStorageSet({
+
+                    pendingSync:
+                        false,
+
+                    pendingSyncFingerprint:
+                        null,
+
+                    pendingSyncRetryCount:
+                        0,
+
+                    pendingSyncCreatedAt:
+                        null
+
+                });
+
+
+                console.log(
+                    "LC2Git: Pending sync cleared after recovery."
+                );
 
 
                 syncRetryCount =
@@ -1102,6 +1204,11 @@ async function retryPendingSync() {
             console.error(
                 "LC2Git: Pending sync retry failed:",
                 response.message
+            );
+
+
+            console.log(
+                "LC2Git: Pending state preserved."
             );
 
 
@@ -1164,436 +1271,11 @@ function scheduleNextRetry() {
 
 }
 
-
 // ============================================
-// 16. HANDLE ACCEPTED SUBMISSION
-// ============================================
-
-async function handleAcceptedSubmission() {
-
-    if (
-        processingAcceptedSubmission
-    ) {
-
-        console.log(
-            "LC2Git: Accepted submission is already being processed."
-        );
-
-        return;
-
-    }
-
-
-    processingAcceptedSubmission =
-        true;
-
-
-    waitingForSubmission =
-        false;
-
-
-    console.log(
-        "🎉 LC2Git: NEW ACCEPTED submission detected!"
-    );
-
-
-    if (
-        !isExtensionContextValid()
-    ) {
-
-        handleInvalidExtensionContext();
-
-        processingAcceptedSubmission =
-            false;
-
-        return;
-
-    }
-
-
-    safeRuntimeMessage(
-        {
-            type:
-                "EXTRACT_EDITOR_DATA"
-        },
-
-        async (editorData) => {
-
-            if (!editorData) {
-
-                processingAcceptedSubmission =
-                    false;
-
-                return;
-
-            }
-
-
-            if (
-                !editorData.success
-            ) {
-
-                console.error(
-                    "LC2Git: Could not extract solution.",
-                    editorData.message
-                );
-
-
-                processingAcceptedSubmission =
-                    false;
-
-
-                await safeStorageSet({
-
-                    waitingForSubmission:
-                        false,
-
-                    submissionStatus:
-                        "Accepted",
-
-                    accepted:
-                        false
-
-                });
-
-
-                return;
-
-            }
-
-
-            const problem =
-                getProblemInfo();
-
-
-            if (!problem) {
-
-                console.error(
-                    "LC2Git: Problem information unavailable."
-                );
-
-
-                processingAcceptedSubmission =
-                    false;
-
-                return;
-
-            }
-
-
-            const language =
-                editorData.language;
-
-
-            const code =
-                editorData.code;
-
-
-            console.log(
-                "LC2Git: Monaco code extracted."
-            );
-
-
-            console.log(
-                "LC2Git: Language:",
-                language
-            );
-
-
-            console.log(
-                "LC2Git: Problem number:",
-                problem.number
-            );
-
-
-            console.log(
-                "LC2Git: Problem title:",
-                problem.title
-            );
-
-
-            console.log(
-                "LC2Git: Code:",
-                code
-            );
-
-
-            // ====================================
-            // CREATE FINGERPRINT
-            // ====================================
-
-            try {
-
-                currentSubmissionFingerprint =
-                    await createSolutionFingerprint(
-                        problem,
-                        language,
-                        code
-                    );
-
-
-                console.log(
-                    "LC2Git: Submission fingerprint:",
-                    currentSubmissionFingerprint
-                );
-
-            } catch (error) {
-
-                console.error(
-                    "LC2Git: Failed to create submission fingerprint:",
-                    error
-                );
-
-
-                processingAcceptedSubmission =
-                    false;
-
-
-                return;
-
-            }
-
-
-            // ====================================
-            // CHECK DUPLICATE
-            // ====================================
-
-            const duplicateData =
-                await safeStorageGet([
-                    "processedSubmissionFingerprints"
-                ]);
-
-
-            if (!duplicateData) {
-
-                processingAcceptedSubmission =
-                    false;
-
-                return;
-
-            }
-
-
-            const processedFingerprints =
-                Array.isArray(
-                    duplicateData.processedSubmissionFingerprints
-                )
-                    ? duplicateData.processedSubmissionFingerprints
-                    : [];
-
-
-            console.log(
-                "LC2Git: Stored fingerprints:",
-                processedFingerprints.length
-            );
-
-
-            console.log(
-                "LC2Git: Current fingerprint:",
-                currentSubmissionFingerprint
-            );
-
-
-            if (
-                processedFingerprints.includes(
-                    currentSubmissionFingerprint
-                )
-            ) {
-
-                console.log(
-                    "🔁 LC2Git: Duplicate submission detected locally. Skipping GitHub sync."
-                );
-
-
-                processingAcceptedSubmission =
-                    false;
-
-
-                return;
-
-            }
-
-
-            // ====================================
-            // SAVE ACCEPTED SOLUTION
-            // ====================================
-
-            const saved =
-                await safeStorageSet({
-
-                    currentProblem:
-                        problem,
-
-                    language:
-                        language,
-
-                    code:
-                        code,
-
-                    waitingForSubmission:
-                        false,
-
-                    submissionStatus:
-                        "Accepted",
-
-                    accepted:
-                        true,
-
-                    pendingSync:
-                        true,
-
-                    pendingSyncFingerprint:
-                        currentSubmissionFingerprint
-
-                });
-
-
-            if (!saved) {
-
-                processingAcceptedSubmission =
-                    false;
-
-                return;
-
-            }
-
-
-            console.log(
-                "LC2Git: Solution saved to extension storage."
-            );
-
-
-            console.log(
-                "LC2Git: Pending sync state saved."
-            );
-
-
-            // ====================================
-            // START GITHUB SYNC
-            // ====================================
-
-            console.log(
-                "LC2Git: Starting automatic GitHub sync..."
-            );
-
-
-            safeRuntimeMessage(
-                {
-                    type:
-                        "SYNC_SOLUTION"
-                },
-
-                async (response) => {
-
-                    // ==================================
-                    // RUNTIME / CONTEXT ERROR
-                    // ==================================
-
-                    if (!response) {
-
-                        console.log(
-                            "LC2Git: Pending sync retained for retry."
-                        );
-
-
-                        processingAcceptedSubmission =
-                            false;
-
-
-                        scheduleNextRetry();
-
-                        return;
-
-                    }
-
-
-                    // ==================================
-                    // SUCCESS
-                    // ==================================
-
-                    if (
-                        response.success
-                    ) {
-
-                        await saveProcessedFingerprint(
-                            currentSubmissionFingerprint
-                        );
-
-
-                        await clearPendingSync();
-
-
-                        syncRetryCount =
-                            0;
-
-
-                        if (
-                            response.alreadySynced
-                        ) {
-
-                            console.log(
-                                "LC2Git: Solution was already synced."
-                            );
-
-                        } else {
-
-                            console.log(
-                                "🎉 LC2Git: Solution automatically committed to GitHub!"
-                            );
-
-
-                            console.log(
-                                "LC2Git: GitHub path:",
-                                response.path
-                            );
-
-
-                            console.log(
-                                "LC2Git: Commit SHA:",
-                                response.commitSha
-                            );
-
-                        }
-
-                    } else {
-
-                        // ==================================
-                        // SYNC FAILED
-                        // ==================================
-
-                        console.error(
-                            "LC2Git: Automatic GitHub sync failed:",
-                            response.message
-                        );
-
-
-                        console.log(
-                            "LC2Git: Pending sync retained for retry."
-                        );
-
-
-                        scheduleNextRetry();
-
-                    }
-
-
-                    processingAcceptedSubmission =
-                        false;
-
-                }
-            );
-
-        }
-    );
-
-}
-
-
-// ============================================
-// 17. CHECK FOR NEW ACCEPTED RESULT
+// 16. DETECT ACCEPTED SUBMISSION
 // ============================================
 
-function checkForNewAcceptance() {
+async function checkSubmissionStatus() {
 
     if (
         !waitingForSubmission
@@ -1604,32 +1286,70 @@ function checkForNewAcceptance() {
     }
 
 
-    const currentAcceptedCount =
+    if (
+        processingAcceptedSubmission
+    ) {
+
+        return;
+
+    }
+
+
+    const acceptedCount =
         getAcceptedCount();
 
 
     if (
-        currentAcceptedCount >
+        acceptedCount <=
         acceptedCountBeforeSubmit
     ) {
 
-        handleAcceptedSubmission();
+        return;
 
     }
+
+
+    const pageText =
+        document.body.innerText;
+
+
+    if (
+        !pageText.includes(
+            "Accepted"
+        )
+    ) {
+
+        return;
+
+    }
+
+
+    console.log(
+        "LC2Git: Accepted submission detected!"
+    );
+
+
+    processingAcceptedSubmission =
+        true;
+
+
+    await handleAcceptedSubmission();
 
 }
 
 
 // ============================================
-// 18. WATCH LEETCODE DOM
+// 17. MONITOR SUBMISSION RESULT
 // ============================================
 
 const submissionObserver =
-    new MutationObserver(() => {
+    new MutationObserver(
+        () => {
 
-        checkForNewAcceptance();
+            checkSubmissionStatus();
 
-    });
+        }
+    );
 
 
 submissionObserver.observe(
@@ -1645,22 +1365,767 @@ submissionObserver.observe(
 
 
 // ============================================
-// 19. PERIODIC SUBMISSION CHECK
+// 18. GET MONACO EDITOR CODE
 // ============================================
 
-setInterval(() => {
+async function extractEditorData() {
 
-    checkForNewAcceptance();
+    if (
+        !isExtensionContextValid()
+    ) {
 
-}, 500);
+        handleInvalidExtensionContext();
+
+        return null;
+
+    }
+
+
+    return new Promise(
+        (resolve) => {
+
+            safeRuntimeMessage(
+                {
+                    type:
+                        "EXTRACT_EDITOR_DATA"
+                },
+
+                (response) => {
+
+                    if (
+                        !response ||
+                        !response.success
+                    ) {
+
+                        console.error(
+                            "LC2Git: Unable to extract editor data."
+                        );
+
+
+                        resolve(null);
+
+                        return;
+
+                    }
+
+
+                    resolve(
+                        response.data
+                    );
+
+                }
+            );
+
+        }
+    );
+
+}
 
 
 // ============================================
-// 20. CHECK EXISTING PENDING SYNC
+// 19. HANDLE ACCEPTED SUBMISSION
+// ============================================
+
+async function handleAcceptedSubmission() {
+
+    if (
+        processingAcceptedSubmission !== true
+    ) {
+
+        processingAcceptedSubmission =
+            true;
+
+    }
+
+
+    try {
+
+        console.log(
+            "🎉 LC2Git: Processing accepted submission..."
+        );
+
+
+        // ====================================
+        // GET PROBLEM
+        // ====================================
+
+        const problem =
+            getProblemInfo();
+
+
+        if (!problem) {
+
+            console.error(
+                "LC2Git: Problem information unavailable."
+            );
+
+
+            waitingForSubmission =
+                false;
+
+
+            processingAcceptedSubmission =
+                false;
+
+
+            return;
+
+        }
+
+
+        console.log(
+            "LC2Git: Problem:",
+            problem
+        );
+
+
+        // ====================================
+        // GET EDITOR DATA
+        // ====================================
+
+        const editorData =
+            await extractEditorData();
+
+
+        if (
+            !editorData ||
+            !editorData.code
+        ) {
+
+            console.error(
+                "LC2Git: Could not extract submitted code."
+            );
+
+
+            waitingForSubmission =
+                false;
+
+
+            processingAcceptedSubmission =
+                false;
+
+
+            return;
+
+        }
+
+
+        const code =
+            editorData.code;
+
+
+        const language =
+            editorData.language ||
+            "unknown";
+
+
+        console.log(
+            "LC2Git: Editor language:",
+            language
+        );
+
+
+        console.log(
+            "LC2Git: Extracted code length:",
+            code.length
+        );
+
+
+        // ====================================
+        // CREATE FINGERPRINT
+        // ====================================
+
+        currentSubmissionFingerprint =
+            await createSolutionFingerprint(
+                problem,
+                language,
+                code
+            );
+
+
+        console.log(
+            "LC2Git: Submission fingerprint:",
+            currentSubmissionFingerprint
+        );
+
+
+        // ====================================
+        // CHECK EXISTING FINGERPRINTS
+        // ====================================
+
+        const storedData =
+            await safeStorageGet([
+                "processedSubmissionFingerprints"
+            ]);
+
+
+        if (!storedData) {
+
+            processingAcceptedSubmission =
+                false;
+
+            return;
+
+        }
+
+
+        const fingerprints =
+            Array.isArray(
+                storedData.processedSubmissionFingerprints
+            )
+                ? storedData.processedSubmissionFingerprints
+                : [];
+
+
+        console.log(
+            "LC2Git: Stored fingerprints:",
+            fingerprints.length
+        );
+
+
+        // ====================================
+        // DUPLICATE CHECK
+        // ====================================
+
+        if (
+            fingerprints.includes(
+                currentSubmissionFingerprint
+            )
+        ) {
+
+            console.log(
+                "🔁 LC2Git: Duplicate submission detected locally. Skipping GitHub sync."
+            );
+
+
+            waitingForSubmission =
+                false;
+
+
+            processingAcceptedSubmission =
+                false;
+
+
+            await safeStorageSet({
+
+                waitingForSubmission:
+                    false,
+
+                submissionStatus:
+                    "Accepted",
+
+                accepted:
+                    true
+
+            });
+
+
+            return;
+
+        }
+
+
+        // ====================================
+        // SAVE ACCEPTED SOLUTION
+        // ====================================
+
+        const saved =
+            await safeStorageSet({
+
+                currentProblem:
+                    problem,
+
+                language:
+                    language,
+
+                code:
+                    code,
+
+                waitingForSubmission:
+                    false,
+
+                submissionStatus:
+                    "Accepted",
+
+                accepted:
+                    true,
+
+                pendingSync:
+                    true,
+
+                pendingSyncFingerprint:
+                    currentSubmissionFingerprint,
+
+                pendingSyncRetryCount:
+                    0,
+
+                pendingSyncCreatedAt:
+                    new Date().toISOString()
+
+            });
+
+
+        if (!saved) {
+
+            console.error(
+                "LC2Git: Failed to save accepted solution."
+            );
+
+
+            processingAcceptedSubmission =
+                false;
+
+
+            return;
+
+        }
+
+
+        console.log(
+            "LC2Git: Solution saved to extension storage."
+        );
+
+
+        console.log(
+            "LC2Git: Pending sync state saved."
+        );
+
+
+        // ====================================
+        // START AUTOMATIC GITHUB SYNC
+        // ====================================
+
+        console.log(
+            "LC2Git: Starting automatic GitHub sync..."
+        );
+
+
+        safeRuntimeMessage(
+            {
+                type:
+                    "SYNC_SOLUTION"
+            },
+
+            async (response) => {
+
+                if (!response) {
+
+                    console.log(
+                        "LC2Git: GitHub sync response unavailable."
+                    );
+
+
+                    console.log(
+                        "LC2Git: Pending sync state preserved."
+                    );
+
+
+                    processingAcceptedSubmission =
+                        false;
+
+
+                    return;
+
+                }
+
+
+                if (
+                    response.success
+                ) {
+
+                    // =================================
+                    // SAVE FINGERPRINT
+                    // =================================
+
+                    await saveProcessedFingerprint(
+                        currentSubmissionFingerprint
+                    );
+
+
+                    // =================================
+                    // CLEAR PENDING SYNC
+                    // =================================
+
+                    await safeStorageSet({
+
+                        pendingSync:
+                            false,
+
+                        pendingSyncFingerprint:
+                            null,
+
+                        pendingSyncRetryCount:
+                            0,
+
+                        pendingSyncCreatedAt:
+                            null
+
+                    });
+
+
+                    console.log(
+                        "LC2Git: Pending sync cleared."
+                    );
+
+
+                    // =================================
+                    // RESET RETRY STATE
+                    // =================================
+
+                    syncRetryCount =
+                        0;
+
+
+                    // =================================
+                    // SHOW SUCCESS
+                    // =================================
+
+                    if (
+                        response.alreadySynced
+                    ) {
+
+                        console.log(
+                            "LC2Git: Solution was already synced to GitHub."
+                        );
+
+                    } else {
+
+                        console.log(
+                            "🎉 LC2Git: Solution automatically committed to GitHub!"
+                        );
+
+
+                        console.log(
+                            "LC2Git: GitHub path:",
+                            response.path
+                        );
+
+
+                        console.log(
+                            "Commit SHA:",
+                            response.commitSha
+                        );
+
+                    }
+
+
+                    processingAcceptedSubmission =
+                        false;
+
+
+                    return;
+
+                }
+
+
+                // =================================
+                // SYNC FAILED
+                // =================================
+
+                console.error(
+                    "LC2Git: GitHub sync failed:",
+                    response.message
+                );
+
+
+                console.log(
+                    "LC2Git: Pending sync preserved for retry."
+                );
+
+
+                // Do not clear pending state.
+                // The solution remains recoverable.
+
+
+                syncRetryCount =
+                    Number(
+                        (
+                            await safeStorageGet([
+                                "pendingSyncRetryCount"
+                            ])
+                        )?.pendingSyncRetryCount || 0
+                    );
+
+
+                scheduleNextRetry();
+
+
+                processingAcceptedSubmission =
+                    false;
+
+            }
+
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "LC2Git: Error while processing accepted submission:",
+            error
+        );
+
+
+        waitingForSubmission =
+            false;
+
+
+        processingAcceptedSubmission =
+            false;
+
+
+        console.log(
+            "LC2Git: Pending sync state will remain available for recovery."
+        );
+
+    }
+
+}
+
+
+// ============================================
+// 20. WATCH FOR SUBMISSION BUTTON CHANGES
+// ============================================
+
+function findSubmitButton() {
+
+    const buttons =
+        document.querySelectorAll(
+            "button"
+        );
+
+
+    for (
+        const button of buttons
+    ) {
+
+        const text =
+            button.innerText
+                ?.trim()
+                .toLowerCase();
+
+
+        const aria =
+            button
+                .getAttribute(
+                    "aria-label"
+                )
+                ?.trim()
+                .toLowerCase();
+
+
+        if (
+            text === "submit" ||
+            aria === "submit"
+        ) {
+
+            return button;
+
+        }
+
+    }
+
+
+    return null;
+
+}
+
+
+// ============================================
+// 21. SUBMIT BUTTON OBSERVER
+// ============================================
+
+let submitButton =
+    null;
+
+
+let submitButtonObserver =
+    null;
+
+
+function attachSubmitButtonObserver() {
+
+    const newButton =
+        findSubmitButton();
+
+
+    if (
+        !newButton
+    ) {
+
+        return;
+
+    }
+
+
+    if (
+        submitButton ===
+        newButton
+    ) {
+
+        return;
+
+    }
+
+
+    submitButton =
+        newButton;
+
+
+    console.log(
+        "LC2Git: Submit button found."
+    );
+
+
+    if (
+        submitButtonObserver
+    ) {
+
+        submitButtonObserver.disconnect();
+
+    }
+
+
+    submitButtonObserver =
+        new MutationObserver(
+            () => {
+
+                // Button still exists.
+                // Submission monitoring is handled
+                // globally by the submission observer.
+
+            }
+        );
+
+
+    submitButtonObserver.observe(
+        submitButton,
+        {
+            attributes:
+                true,
+
+            childList:
+                true,
+
+            subtree:
+                true
+        }
+    );
+
+}
+
+
+// ============================================
+// 22. PERIODIC SUBMIT BUTTON CHECK
+// ============================================
+
+setInterval(
+    () => {
+
+        if (
+            !isExtensionContextValid()
+        ) {
+
+            return;
+
+        }
+
+
+        attachSubmitButtonObserver();
+
+    },
+
+    2000
+);
+
+
+// ============================================
+// 23. PERIODIC SUBMISSION CHECK
+// ============================================
+
+setInterval(
+    () => {
+
+        if (
+            !isExtensionContextValid()
+        ) {
+
+            return;
+
+        }
+
+
+        checkSubmissionStatus();
+
+    },
+
+    1000
+);
+
+
+// ============================================
+// 24. INITIAL PROBLEM DETECTION
 // ============================================
 
 setTimeout(
-    () => {
+    async () => {
+
+        if (
+            !isExtensionContextValid()
+        ) {
+
+            handleInvalidExtensionContext();
+
+            return;
+
+        }
+
+
+        const problem =
+            getProblemInfo();
+
+
+        if (!problem) {
+
+            console.log(
+                "LC2Git: No problem detected at startup."
+            );
+
+            return;
+
+        }
+
+
+        lastSlug =
+            problem.slug;
+
+
+        await safeStorageSet({
+
+            currentProblem:
+                problem
+
+        });
+
+
+        console.log(
+            "LC2Git: Initial problem:",
+            problem
+
+        );
+
+    },
+
+    1500
+);
+
+
+// ============================================
+// 25. STARTUP PENDING SYNC RECOVERY
+// ============================================
+
+setTimeout(
+    async () => {
 
         if (
             !isExtensionContextValid()
@@ -1678,7 +2143,51 @@ setTimeout(
         );
 
 
-        retryPendingSync();
+        const pendingData =
+            await safeStorageGet([
+                "pendingSync",
+                "pendingSyncRetryCount",
+                "pendingSyncCreatedAt"
+            ]);
+
+
+        if (
+            pendingData &&
+            pendingData.pendingSync === true
+        ) {
+
+            console.log(
+                "LC2Git: Pending sync detected after startup."
+            );
+
+
+            console.log(
+                "LC2Git: Persisted retry count:",
+                pendingData.pendingSyncRetryCount || 0
+            );
+
+
+            if (
+                pendingData.pendingSyncCreatedAt
+            ) {
+
+                console.log(
+                    "LC2Git: Pending sync created at:",
+                    pendingData.pendingSyncCreatedAt
+                );
+
+            }
+
+
+            retryPendingSync();
+
+        } else {
+
+            console.log(
+                "LC2Git: No pending sync found."
+            );
+
+        }
 
     },
 
@@ -1687,7 +2196,7 @@ setTimeout(
 
 
 // ============================================
-// 21. READY
+// 26. READY
 // ============================================
 
 console.log(
