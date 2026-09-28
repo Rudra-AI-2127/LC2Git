@@ -2,154 +2,173 @@
 // LC2Git - Popup Script
 // ============================================
 
-document.addEventListener("DOMContentLoaded", () => {
 
-    // ========================================
-    // DOM ELEMENTS
-    // ========================================
+// ============================================
+// DOM ELEMENTS
+// ============================================
 
-    const statusDot =
-        document.getElementById("statusDot");
+const statusText =
+    document.getElementById("statusText");
 
-    const statusText =
-        document.getElementById("statusText");
+const statusDot =
+    document.getElementById("statusDot");
 
-    const connectSection =
-        document.getElementById("connectSection");
+const connectSection =
+    document.getElementById("connectSection");
 
-    const connectedSection =
-        document.getElementById("connectedSection");
+const connectedSection =
+    document.getElementById("connectedSection");
 
-    const githubToken =
-        document.getElementById("githubToken");
+const githubToken =
+    document.getElementById("githubToken");
 
-    const connectGithub =
-        document.getElementById("connectGithub");
+const connectButton =
+    document.getElementById("connectGithub");
 
-    const disconnectGithub =
-        document.getElementById("disconnectGithub");
+const disconnectButton =
+    document.getElementById("disconnectGithub");
 
-    const githubUsername =
-        document.getElementById("githubUsername");
+const githubUsername =
+    document.getElementById("githubUsername");
 
-    const repoName =
-        document.getElementById("repoName");
+const repoName =
+    document.getElementById("repoName");
 
-    const syncedCount =
-        document.getElementById("syncedCount");
+const syncButton =
+    document.getElementById("syncNow");
 
-    const commitCount =
-        document.getElementById("commitCount");
+const syncedCountElement =
+    document.getElementById("syncedCount");
 
-    const historyList =
-        document.getElementById("historyList");
+const commitCountElement =
+    document.getElementById("commitCount");
 
-    const syncNow =
-        document.getElementById("syncNow");
+const historyList =
+    document.getElementById("historyList");
 
-    const message =
-        document.getElementById("message");
-
-
-    // ========================================
-    // CONSTANTS
-    // ========================================
-
-    const MAX_VISIBLE_HISTORY = 2;
+const messageElement =
+    document.getElementById("message");
 
 
-    // ========================================
-    // SHOW MESSAGE
-    // ========================================
+// ============================================
+// CURRENT PROBLEM ELEMENTS
+// ============================================
 
-    function showMessage(
-        text,
-        type = "info"
-    ) {
+const problemEmpty =
+    document.getElementById("problemEmpty");
 
-        if (!message) {
-            return;
-        }
+const problemDetails =
+    document.getElementById("problemDetails");
 
+const problemNumber =
+    document.getElementById("problemNumber");
 
-        message.textContent =
-            text;
+const problemTitle =
+    document.getElementById("problemTitle");
 
+const problemDifficulty =
+    document.getElementById("problemDifficulty");
 
-        if (type === "success") {
-
-            message.style.color =
-                "#22c55e";
-
-        } else if (type === "error") {
-
-            message.style.color =
-                "#ef4444";
-
-        } else {
-
-            message.style.color =
-                "#85858b";
-
-        }
+const problemLanguage =
+    document.getElementById("problemLanguage");
 
 
-        clearTimeout(
-            showMessage.timeout
-        );
+// ============================================
+// CONSTANTS
+// ============================================
+
+const MAX_VISIBLE_HISTORY = 2;
 
 
-        showMessage.timeout =
-            setTimeout(() => {
+// ============================================
+// INITIALIZE POPUP
+// ============================================
 
-                if (message) {
-                    message.textContent =
-                        "";
-                }
+document.addEventListener(
+    "DOMContentLoaded",
+    () => {
 
-            }, 4000);
+        loadStatus();
 
+        loadStats();
+
+        loadCurrentProblem();
+
+    }
+);
+
+
+// ============================================
+// SYNC STATUS MESSAGE
+// ============================================
+
+function setSyncStatus(
+    type,
+    message
+) {
+
+    if (!messageElement) {
+        return;
     }
 
 
-    // ========================================
-    // UPDATE CONNECTION UI
-    // ========================================
+    messageElement.textContent =
+        message || "";
 
-    function updateConnectionUI(
-        connected,
-        username,
-        repository
-    ) {
 
-        if (connected) {
+    messageElement.className =
+        type
+            ? `message ${type}`
+            : "message";
 
-            // -------------------------------
-            // STATUS
-            // -------------------------------
+}
+
+
+// ============================================
+// LOAD GITHUB STATUS
+// ============================================
+
+async function loadStatus() {
+
+    try {
+
+        const data =
+            await chrome.storage.local.get([
+                "githubConnected",
+                "githubUsername",
+                "githubRepository"
+            ]);
+
+
+        console.log(
+            "LC2Git: GitHub status:",
+            data
+        );
+
+
+        // ========================================
+        // CONNECTED
+        // ========================================
+
+        if (
+            data.githubConnected === true
+        ) {
+
+            if (statusText) {
+
+                statusText.textContent =
+                    "Connected";
+
+            }
+
 
             if (statusDot) {
 
                 statusDot.textContent =
                     "●";
 
-                statusDot.style.color =
-                    "#22c55e";
-
             }
 
-
-            if (statusText) {
-
-                statusText.textContent =
-                    "GitHub Connected";
-
-            }
-
-
-            // -------------------------------
-            // SECTIONS
-            // -------------------------------
 
             if (connectSection) {
 
@@ -167,58 +186,39 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
 
-            // -------------------------------
-            // USERNAME
-            // -------------------------------
-
             if (githubUsername) {
 
                 githubUsername.textContent =
-                    username || "-";
+                    data.githubUsername ||
+                    "GitHub User";
 
             }
 
 
-            // -------------------------------
-            // REPOSITORY
-            // -------------------------------
-
             if (repoName) {
 
                 repoName.textContent =
-                    repository ||
+                    data.githubRepository ||
                     "Rudra-AI-2127/leetcode-solutions";
 
             }
 
 
-            // -------------------------------
-            // SYNC BUTTON
-            // -------------------------------
+            if (syncButton) {
 
-            if (syncNow) {
-
-                syncNow.disabled =
+                syncButton.disabled =
                     false;
 
             }
 
-        } else {
 
-            // -------------------------------
-            // STATUS
-            // -------------------------------
+        }
 
-            if (statusDot) {
+        // ========================================
+        // NOT CONNECTED
+        // ========================================
 
-                statusDot.textContent =
-                    "●";
-
-                statusDot.style.color =
-                    "#f59e0b";
-
-            }
-
+        else {
 
             if (statusText) {
 
@@ -228,9 +228,13 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
 
-            // -------------------------------
-            // SECTIONS
-            // -------------------------------
+            if (statusDot) {
+
+                statusDot.textContent =
+                    "●";
+
+            }
+
 
             if (connectSection) {
 
@@ -248,777 +252,956 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
 
-            // -------------------------------
-            // SYNC BUTTON
-            // -------------------------------
+            if (syncButton) {
 
-            if (syncNow) {
-
-                syncNow.disabled =
+                syncButton.disabled =
                     true;
 
             }
 
         }
 
-    }
 
+    } catch (error) {
 
-    // ========================================
-    // LOAD GITHUB STATUS
-    // ========================================
-
-    function loadGitHubStatus() {
-
-        chrome.runtime.sendMessage(
-            {
-                type: "GET_GITHUB_STATUS"
-            },
-
-            (response) => {
-
-                if (
-                    chrome.runtime.lastError
-                ) {
-
-                    console.error(
-                        "LC2Git: GitHub status error:",
-                        chrome.runtime.lastError
-                    );
-
-                    updateConnectionUI(
-                        false
-                    );
-
-                    return;
-
-                }
-
-
-                if (
-                    !response ||
-                    !response.success
-                ) {
-
-                    updateConnectionUI(
-                        false
-                    );
-
-                    return;
-
-                }
-
-
-                updateConnectionUI(
-                    response.connected === true,
-                    response.username,
-                    response.repository
-                );
-
-            }
+        console.error(
+            "LC2Git: Failed to load status:",
+            error
         );
 
-    }
 
+        if (statusText) {
 
-    // ========================================
-    // LOAD STATS + HISTORY
-    // ========================================
-
-    async function loadStats() {
-
-        try {
-
-            const data =
-                await chrome.storage.local.get([
-                    "syncedCount",
-                    "commitCount",
-                    "syncHistory"
-                ]);
-
-
-            // ==================================
-            // STATS
-            // ==================================
-
-            if (syncedCount) {
-
-                syncedCount.textContent =
-                    data.syncedCount || 0;
-
-            }
-
-
-            if (commitCount) {
-
-                commitCount.textContent =
-                    data.commitCount || 0;
-
-            }
-
-
-            // ==================================
-            // HISTORY
-            // ==================================
-
-            renderHistory(
-                data.syncHistory
-            );
-
-        } catch (error) {
-
-            console.error(
-                "LC2Git: Failed to load stats:",
-                error
-            );
+            statusText.textContent =
+                "Error";
 
         }
 
     }
 
+}
 
-    // ========================================
-    // RENDER HISTORY
-    // ========================================
 
-    function renderHistory(
-        history
+// ============================================
+// LOAD STATISTICS + HISTORY
+// ============================================
+
+async function loadStats() {
+
+    try {
+
+        const data =
+            await chrome.storage.local.get([
+                "syncedCount",
+                "commitCount",
+                "syncHistory"
+            ]);
+
+
+        console.log(
+            "LC2Git: Stats:",
+            data
+        );
+
+
+        // ========================================
+        // STATISTICS
+        // ========================================
+
+        if (syncedCountElement) {
+
+            syncedCountElement.textContent =
+                data.syncedCount || 0;
+
+        }
+
+
+        if (commitCountElement) {
+
+            commitCountElement.textContent =
+                data.commitCount || 0;
+
+        }
+
+
+        // ========================================
+        // HISTORY
+        // ========================================
+
+        renderSyncHistory(
+            Array.isArray(data.syncHistory)
+                ? data.syncHistory
+                : []
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "LC2Git: Failed to load statistics:",
+            error
+        );
+
+
+        if (syncedCountElement) {
+
+            syncedCountElement.textContent =
+                "0";
+
+        }
+
+
+        if (commitCountElement) {
+
+            commitCountElement.textContent =
+                "0";
+
+        }
+
+
+        renderSyncHistory([]);
+
+    }
+
+}
+
+
+// ============================================
+// RENDER SYNC HISTORY
+// ============================================
+
+function renderSyncHistory(history) {
+
+    if (!historyList) {
+
+        return;
+
+    }
+
+
+    if (
+        !history ||
+        history.length === 0
     ) {
 
-        if (!historyList) {
-            return;
-        }
+        historyList.innerHTML = `
+            <p class="emptyHistory">
+                No synced solutions yet.
+            </p>
+        `;
+
+        return;
+
+    }
 
 
-        historyList.innerHTML =
-            "";
+    // Only display latest 2
+    const recentHistory =
+        history.slice(
+            0,
+            MAX_VISIBLE_HISTORY
+        );
 
 
-        if (
-            !Array.isArray(history) ||
-            history.length === 0
-        ) {
+    historyList.innerHTML =
+        recentHistory
+            .map(
+                entry => {
 
-            const empty =
-                document.createElement(
-                    "p"
-                );
+                    const number =
+                        entry.number || "?";
 
 
-            empty.className =
-                "emptyHistory";
+                    const problem =
+                        entry.problem ||
+                        "Unknown Problem";
 
 
-            empty.textContent =
-                "No synced solutions yet.";
-
-
-            historyList.appendChild(
-                empty
-            );
-
-
-            return;
-
-        }
-
-
-        // ==================================
-        // ONLY SHOW 2 MOST RECENT
-        // ==================================
-
-        const recentHistory =
-            history.slice(
-                0,
-                MAX_VISIBLE_HISTORY
-            );
-
-
-        recentHistory.forEach(
-            (item) => {
-
-                const historyItem =
-                    document.createElement(
-                        "div"
-                    );
-
-
-                historyItem.className =
-                    "historyItem";
-
-
-                // --------------------------
-                // TITLE
-                // --------------------------
-
-                const title =
-                    document.createElement(
-                        "div"
-                    );
-
-
-                title.className =
-                    "historyTitle";
-
-
-                const number =
-                    item.number
-                        ? `#${String(item.number).padStart(4, "0")} `
-                        : "";
-
-
-                title.textContent =
-                    `${number}${item.problem || "Unknown Problem"}`;
-
-
-                // --------------------------
-                // META
-                // --------------------------
-
-                const meta =
-                    document.createElement(
-                        "div"
-                    );
-
-
-                meta.className =
-                    "historyMeta";
-
-
-                const language =
-                    item.language ||
-                    "Unknown";
-
-
-                const folder =
-                    item.folder ||
-                    "Other";
-
-
-                let timeText =
-                    "";
-
-
-                if (item.timestamp) {
-
-                    const date =
-                        new Date(
-                            item.timestamp
+                    const language =
+                        formatLanguage(
+                            entry.language
                         );
 
 
-                    if (
-                        !Number.isNaN(
-                            date.getTime()
-                        )
-                    ) {
+                    const folder =
+                        entry.folder ||
+                        "Other";
 
-                        timeText =
-                            formatRelativeTime(
-                                date
-                            );
 
-                    }
+                    const time =
+                        formatRelativeTime(
+                            entry.timestamp
+                        );
+
+
+                    return `
+                        <div class="historyItem">
+
+                            <div class="historyTitle">
+
+                                #${escapeHtml(number)}
+                                ${escapeHtml(problem)}
+
+                            </div>
+
+                            <div class="historyMeta">
+
+                                ${escapeHtml(language)}
+                                •
+                                ${escapeHtml(folder)}
+                                •
+                                ${escapeHtml(time)}
+
+                            </div>
+
+                        </div>
+                    `;
 
                 }
+            )
+            .join("");
+
+}
 
 
-                meta.textContent =
-                    timeText
-                        ? `${language} · ${folder} · ${timeText}`
-                        : `${language} · ${folder}`;
+// ============================================
+// LOAD CURRENT LEETCODE PROBLEM
+// ============================================
+
+async function loadCurrentProblem() {
+
+    try {
+
+        const data =
+            await chrome.storage.local.get([
+                "currentProblem",
+                "language"
+            ]);
 
 
-                // --------------------------
-                // APPEND
-                // --------------------------
-
-                historyItem.appendChild(
-                    title
-                );
+        const problem =
+            data.currentProblem;
 
 
-                historyItem.appendChild(
-                    meta
-                );
+        console.log(
+            "LC2Git: Current problem:",
+            problem
+        );
 
 
-                historyList.appendChild(
-                    historyItem
+        // ========================================
+        // NO PROBLEM
+        // ========================================
+
+        if (
+            !problem ||
+            !problem.title
+        ) {
+
+            if (problemEmpty) {
+
+                problemEmpty.style.display =
+                    "block";
+
+            }
+
+
+            if (problemDetails) {
+
+                problemDetails.style.display =
+                    "none";
+
+            }
+
+
+            return;
+
+        }
+
+
+        // ========================================
+        // SHOW PROBLEM
+        // ========================================
+
+        if (problemEmpty) {
+
+            problemEmpty.style.display =
+                "none";
+
+        }
+
+
+        if (problemDetails) {
+
+            problemDetails.style.display =
+                "block";
+
+        }
+
+
+        // ========================================
+        // NUMBER
+        // ========================================
+
+        if (problemNumber) {
+
+            problemNumber.textContent =
+                problem.number
+                    ? `#${problem.number}`
+                    : "#--";
+
+        }
+
+
+        // ========================================
+        // TITLE
+        // ========================================
+
+        if (problemTitle) {
+
+            problemTitle.textContent =
+                problem.title ||
+                "Unknown Problem";
+
+        }
+
+
+        // ========================================
+        // DIFFICULTY
+        // ========================================
+
+        if (problemDifficulty) {
+
+            const difficulty =
+                problem.difficulty ||
+                "Unknown";
+
+
+            problemDifficulty.textContent =
+                difficulty;
+
+
+            problemDifficulty.className =
+                "problemDifficulty";
+
+
+            const normalizedDifficulty =
+                String(
+                    difficulty
+                )
+                    .toLowerCase()
+                    .trim();
+
+
+            if (
+                normalizedDifficulty ===
+                "easy"
+            ) {
+
+                problemDifficulty.classList.add(
+                    "easy"
                 );
 
             }
+
+
+            if (
+                normalizedDifficulty ===
+                "medium"
+            ) {
+
+                problemDifficulty.classList.add(
+                    "medium"
+                );
+
+            }
+
+
+            if (
+                normalizedDifficulty ===
+                "hard"
+            ) {
+
+                problemDifficulty.classList.add(
+                    "hard"
+                );
+
+            }
+
+        }
+
+
+        // ========================================
+        // LANGUAGE
+        // ========================================
+
+        if (problemLanguage) {
+
+            problemLanguage.textContent =
+                data.language
+                    ? formatLanguage(
+                        data.language
+                    )
+                    : "Language not detected";
+
+        }
+
+
+    } catch (error) {
+
+        console.error(
+            "LC2Git: Failed to load current problem:",
+            error
         );
+
+
+    }
+
+}
+
+
+// ============================================
+// FORMAT LANGUAGE
+// ============================================
+
+function formatLanguage(language) {
+
+    if (!language) {
+
+        return "Unknown";
 
     }
 
 
-    // ========================================
-    // RELATIVE TIME
-    // ========================================
+    const normalized =
+        String(language)
+            .toLowerCase()
+            .trim();
 
-    function formatRelativeTime(
-        date
+
+    const languageMap = {
+
+        javascript:
+            "JavaScript",
+
+        js:
+            "JavaScript",
+
+        typescript:
+            "TypeScript",
+
+        ts:
+            "TypeScript",
+
+        python:
+            "Python",
+
+        python3:
+            "Python",
+
+        java:
+            "Java",
+
+        cpp:
+            "C++",
+
+        "c++":
+            "C++",
+
+        c:
+            "C",
+
+        csharp:
+            "C#",
+
+        "c#":
+            "C#",
+
+        go:
+            "Go",
+
+        golang:
+            "Go",
+
+        rust:
+            "Rust",
+
+        kotlin:
+            "Kotlin",
+
+        swift:
+            "Swift",
+
+        php:
+            "PHP",
+
+        ruby:
+            "Ruby",
+
+        scala:
+            "Scala",
+
+        dart:
+            "Dart",
+
+        sql:
+            "SQL",
+
+        bash:
+            "Bash",
+
+        shell:
+            "Shell"
+
+    };
+
+
+    return (
+        languageMap[normalized] ||
+        language
+    );
+
+}
+
+
+// ============================================
+// RELATIVE TIME
+// ============================================
+
+function formatRelativeTime(timestamp) {
+
+    if (!timestamp) {
+
+        return "Unknown time";
+
+    }
+
+
+    const date =
+        new Date(timestamp);
+
+
+    if (
+        isNaN(
+            date.getTime()
+        )
     ) {
 
-        const now =
-            Date.now();
+        return "Unknown time";
+
+    }
 
 
-        const diff =
-            Math.max(
-                0,
-                now - date.getTime()
-            );
-
-
-        const seconds =
-            Math.floor(
-                diff / 1000
-            );
-
-
-        if (seconds < 60) {
-
-            return "Just now";
-
-        }
-
-
-        const minutes =
-            Math.floor(
-                seconds / 60
-            );
-
-
-        if (minutes < 60) {
-
-            return `${minutes}m ago`;
-
-        }
-
-
-        const hours =
-            Math.floor(
-                minutes / 60
-            );
-
-
-        if (hours < 24) {
-
-            return `${hours}h ago`;
-
-        }
-
-
-        const days =
-            Math.floor(
-                hours / 24
-            );
-
-
-        if (days < 7) {
-
-            return `${days}d ago`;
-
-        }
-
-
-        return date.toLocaleDateString(
-            undefined,
-            {
-                month: "short",
-                day: "numeric"
-            }
+    const seconds =
+        Math.floor(
+            (
+                Date.now() -
+                date.getTime()
+            ) / 1000
         );
 
+
+    if (
+        seconds < 60
+    ) {
+
+        return "Just now";
+
     }
 
 
-    // --------------------------------------------
-    // Popup Sync Status
-    // --------------------------------------------
+    const minutes =
+        Math.floor(
+            seconds / 60
+        );
 
-    function setSyncStatus(type, text) {
 
-        if (!message) {
-            return;
+    if (
+        minutes < 60
+    ) {
+
+        return minutes === 1
+            ? "1 minute ago"
+            : `${minutes} minutes ago`;
+
+    }
+
+
+    const hours =
+        Math.floor(
+            minutes / 60
+        );
+
+
+    if (
+        hours < 24
+    ) {
+
+        return hours === 1
+            ? "1 hour ago"
+            : `${hours} hours ago`;
+
+    }
+
+
+    const days =
+        Math.floor(
+            hours / 24
+        );
+
+
+    if (
+        days < 7
+    ) {
+
+        return days === 1
+            ? "Yesterday"
+            : `${days} days ago`;
+
+    }
+
+
+    return date.toLocaleDateString(
+        "en-IN",
+        {
+            day:
+                "numeric",
+
+            month:
+                "short",
+
+            year:
+                "numeric"
         }
+    );
 
-        message.textContent = text;
-
-        message.className =
-            `message ${type}`;
-
-    }
+}
 
 
-    // ========================================
-    // CONNECT GITHUB
-    // ========================================
+// ============================================
+// ESCAPE HTML
+// ============================================
 
-    if (connectGithub) {
+function escapeHtml(value) {
 
-        connectGithub.addEventListener(
-            "click",
-            () => {
+    return String(value)
 
-                const token =
-                    githubToken?.value.trim();
+        .replace(
+            /&/g,
+            "&amp;"
+        )
+
+        .replace(
+            /</g,
+            "&lt;"
+        )
+
+        .replace(
+            />/g,
+            "&gt;"
+        )
+
+        .replace(
+            /"/g,
+            "&quot;"
+        )
+
+        .replace(
+            /'/g,
+            "&#039;"
+        );
+
+}
 
 
-                if (!token) {
+// ============================================
+// CONNECT GITHUB
+// ============================================
 
-                    showMessage(
-                        "Enter your GitHub token.",
-                        "error"
-                    );
+if (connectButton) {
 
-                    return;
+    connectButton.addEventListener(
+        "click",
+        async () => {
 
-                }
-
-
-                connectGithub.disabled =
-                    true;
+            const token =
+                githubToken?.value.trim();
 
 
-                connectGithub.textContent =
-                    "Connecting...";
+            if (!token) {
+
+                setSyncStatus(
+                    "error",
+                    "Please enter your GitHub token."
+                );
+
+                return;
+
+            }
 
 
-                chrome.runtime.sendMessage(
-                    {
+            connectButton.disabled =
+                true;
+
+
+            connectButton.textContent =
+                "Connecting...";
+
+
+            try {
+
+                const response =
+                    await chrome.runtime.sendMessage({
+
                         type:
                             "CONNECT_GITHUB",
 
                         token:
                             token
-                    },
 
-                    (response) => {
-
-                        connectGithub.disabled =
-                            false;
-
-                        connectGithub.textContent =
-                            "Connect GitHub";
+                    });
 
 
-                        if (
-                            chrome.runtime.lastError
-                        ) {
-
-                            console.error(
-                                "LC2Git: Connection error:",
-                                chrome.runtime.lastError
-                            );
+                console.log(
+                    "LC2Git: Connection response:",
+                    response
+                );
 
 
-                            showMessage(
-                                "Connection failed.",
-                                "error"
-                            );
+                if (
+                    response &&
+                    response.success
+                ) {
 
-
-                            return;
-
-                        }
-
-
-                        if (
-                            !response ||
-                            !response.success
-                        ) {
-
-                            showMessage(
-                                response?.message ||
-                                "Failed to connect GitHub.",
-                                "error"
-                            );
-
-
-                            return;
-
-                        }
-
+                    if (githubToken) {
 
                         githubToken.value =
                             "";
 
-
-                        updateConnectionUI(
-                            true,
-                            response.username,
-                            response.repository
-                        );
-
-
-                        showMessage(
-                            "GitHub connected successfully.",
-                            "success"
-                        );
-
-
-                        loadStats();
-
                     }
-                );
-
-            }
-        );
-
-    }
-
-
-    // ========================================
-    // DISCONNECT GITHUB
-    // ========================================
-
-    if (disconnectGithub) {
-
-        disconnectGithub.addEventListener(
-            "click",
-            () => {
-
-                disconnectGithub.disabled =
-                    true;
-
-
-                chrome.runtime.sendMessage(
-                    {
-                        type:
-                            "DISCONNECT_GITHUB"
-                    },
-
-                    (response) => {
-
-                        disconnectGithub.disabled =
-                            false;
-
-
-                        if (
-                            chrome.runtime.lastError
-                        ) {
-
-                            console.error(
-                                "LC2Git: Disconnect error:",
-                                chrome.runtime.lastError
-                            );
-
-
-                            showMessage(
-                                "Disconnect failed.",
-                                "error"
-                            );
-
-
-                            return;
-
-                        }
-
-
-                        if (
-                            response &&
-                            response.success === false
-                        ) {
-
-                            showMessage(
-                                response.message ||
-                                "Disconnect failed.",
-                                "error"
-                            );
-
-
-                            return;
-
-                        }
-
-
-                        updateConnectionUI(
-                            false
-                        );
-
-
-                        showMessage(
-                            "GitHub disconnected.",
-                            "info"
-                        );
-
-
-                        loadStats();
-
-                    }
-                );
-
-            }
-        );
-
-    }
-
-
-    // ========================================
-    // SYNC CURRENT PROBLEM
-    // ========================================
-
-    if (syncNow) {
-
-        syncNow.addEventListener(
-            "click",
-            async () => {
-
-                syncNow.disabled =
-                    true;
-
-
-                const originalText =
-                    syncNow.textContent;
-
-
-                // ----------------------------------------
-                // SYNCING STATE
-                // ----------------------------------------
-
-                syncNow.textContent =
-                    "Syncing...";
-
-                setSyncStatus(
-                    "loading",
-                    "Syncing solution to GitHub..."
-                );
-
-
-                try {
-
-                    const response =
-                        await chrome.runtime.sendMessage({
-
-                            type:
-                                "SYNC_SOLUTION"
-
-                        });
-
-
-                    console.log(
-                        "LC2Git: Manual sync response:",
-                        response
-                    );
-
-
-                    // ----------------------------------------
-                    // SUCCESS
-                    // ----------------------------------------
-
-                    if (
-                        response &&
-                        response.success
-                    ) {
-
-                        // Already exists on GitHub
-                        if (
-                            response.alreadySynced
-                        ) {
-
-                            syncNow.textContent =
-                                "Already synced";
-
-                            setSyncStatus(
-                                "duplicate",
-                                "Solution is already synced to GitHub."
-                            );
-
-
-                        } else {
-
-                            // Newly synced
-                            syncNow.textContent =
-                                "✓ Synced";
-
-                            setSyncStatus(
-                                "success",
-                                "Solution synced successfully."
-                            );
-
-                        }
-
-
-                        // Refresh stats/history
-                        await loadStats();
-
-
-                        // Restore button
-                        setTimeout(
-                            () => {
-
-                                syncNow.textContent =
-                                    originalText;
-
-                                setSyncStatus(
-                                    "",
-                                    ""
-                                );
-
-                            },
-                            2000
-                        );
-
-
-                    } else {
-
-                        // ----------------------------------------
-                        // FAILURE
-                        // ----------------------------------------
-
-                        syncNow.textContent =
-                            "Sync failed";
-
-                        setSyncStatus(
-                            "error",
-                            response?.message ||
-                            "Unable to sync solution to GitHub."
-                        );
-
-
-                        setTimeout(
-                            () => {
-
-                                syncNow.textContent =
-                                    originalText;
-
-                            },
-                            2000
-                        );
-
-                    }
-
-
-                } catch (error) {
-
-                    console.error(
-                        "LC2Git: Manual sync error:",
-                        error
-                    );
-
-
-                    // ----------------------------------------
-                    // ERROR
-                    // ----------------------------------------
-
-                    syncNow.textContent =
-                        "Sync failed";
 
 
                     setSyncStatus(
-                        "error",
-                        error.message ||
-                        "Unable to sync solution to GitHub."
+                        "success",
+                        "GitHub connected successfully."
                     );
+
+
+                    await loadStatus();
+
+
+                } else {
+
+                    setSyncStatus(
+                        "error",
+                        response?.message ||
+                        "GitHub connection failed."
+                    );
+
+                }
+
+
+            } catch (error) {
+
+                console.error(
+                    "LC2Git: GitHub connection error:",
+                    error
+                );
+
+
+                setSyncStatus(
+                    "error",
+                    error.message ||
+                    "GitHub connection failed."
+                );
+
+
+            } finally {
+
+                connectButton.disabled =
+                    false;
+
+
+                connectButton.textContent =
+                    "Connect GitHub";
+
+            }
+
+        }
+    );
+
+}
+
+
+// ============================================
+// DISCONNECT GITHUB
+// ============================================
+
+if (disconnectButton) {
+
+    disconnectButton.addEventListener(
+        "click",
+        async () => {
+
+            try {
+
+                const response =
+                    await chrome.runtime.sendMessage({
+
+                        type:
+                            "DISCONNECT_GITHUB"
+
+                    });
+
+
+                console.log(
+                    "LC2Git: Disconnect response:",
+                    response
+                );
+
+
+                if (
+                    response &&
+                    response.success
+                ) {
+
+                    setSyncStatus(
+                        "success",
+                        "GitHub disconnected."
+                    );
+
+                }
+
+
+                await loadStatus();
+
+
+            } catch (error) {
+
+                console.error(
+                    "LC2Git: Disconnect error:",
+                    error
+                );
+
+
+                setSyncStatus(
+                    "error",
+                    error.message ||
+                    "Failed to disconnect GitHub."
+                );
+
+            }
+
+        }
+    );
+
+}
+
+
+// ============================================
+// SYNC CURRENT PROBLEM
+// ============================================
+
+if (syncButton) {
+
+    syncButton.addEventListener(
+        "click",
+        async () => {
+
+            syncButton.disabled =
+                true;
+
+
+            const originalText =
+                "Sync Current Problem";
+
+
+            // ========================================
+            // SYNCING STATE
+            // ========================================
+
+            syncButton.textContent =
+                "Syncing...";
+
+
+            setSyncStatus(
+                "loading",
+                "Syncing solution to GitHub..."
+            );
+
+
+            try {
+
+                const response =
+                    await chrome.runtime.sendMessage({
+
+                        type:
+                            "SYNC_SOLUTION"
+
+                    });
+
+
+                console.log(
+                    "LC2Git: Manual sync response:",
+                    response
+                );
+
+
+                // ========================================
+                // SUCCESS
+                // ========================================
+
+                if (
+                    response &&
+                    response.success
+                ) {
+
+                    // ------------------------------------
+                    // ALREADY SYNCED
+                    // ------------------------------------
+
+                    if (
+                        response.alreadySynced
+                    ) {
+
+                        syncButton.textContent =
+                            "Already synced";
+
+
+                        setSyncStatus(
+                            "duplicate",
+                            "Solution is already synced to GitHub."
+                        );
+
+                    }
+
+
+                    // ------------------------------------
+                    // NEWLY SYNCED
+                    // ------------------------------------
+
+                    else {
+
+                        syncButton.textContent =
+                            "✓ Synced";
+
+
+                        setSyncStatus(
+                            "success",
+                            "Solution synced successfully."
+                        );
+
+                    }
+
+
+                    // Refresh statistics
+                    await loadStats();
 
 
                     setTimeout(
                         () => {
 
-                            syncNow.textContent =
+                            syncButton.textContent =
                                 originalText;
 
                         },
@@ -1026,25 +1209,76 @@ document.addEventListener("DOMContentLoaded", () => {
                     );
 
 
-                } finally {
+                }
 
-                    syncNow.disabled =
-                        false;
+                // ========================================
+                // FAILURE
+                // ========================================
+
+                else {
+
+                    syncButton.textContent =
+                        "Sync failed";
+
+
+                    setSyncStatus(
+                        "error",
+                        response?.message ||
+                        "Unable to sync solution to GitHub."
+                    );
+
+
+                    setTimeout(
+                        () => {
+
+                            syncButton.textContent =
+                                originalText;
+
+                        },
+                        2000
+                    );
 
                 }
 
+
+            } catch (error) {
+
+                console.error(
+                    "LC2Git: Manual sync error:",
+                    error
+                );
+
+
+                syncButton.textContent =
+                    "Sync failed";
+
+
+                setSyncStatus(
+                    "error",
+                    error.message ||
+                    "Unable to sync solution to GitHub."
+                );
+
+
+                setTimeout(
+                    () => {
+
+                        syncButton.textContent =
+                            originalText;
+
+                    },
+                    2000
+                );
+
+
+            } finally {
+
+                syncButton.disabled =
+                    false;
+
             }
-        );
 
-    }
+        }
+    );
 
-
-    // ========================================
-    // INITIAL LOAD
-    // ========================================
-
-    loadGitHubStatus();
-
-    loadStats();
-
-});
+}

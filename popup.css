@@ -1,5 +1,5 @@
 /* ============================================
-   LC2Git — Clean Developer UI
+   LC2Git - Popup Styles
    ============================================ */
 
 :root {
@@ -25,7 +25,23 @@
 
 
 /* ============================================
-   BODY
+   RESET
+   ============================================ */
+
+* {
+    box-sizing: border-box;
+    scrollbar-width: none;
+}
+
+*::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+}
+
+
+/* ============================================
+   HTML
    ============================================ */
 
 html {
@@ -36,6 +52,10 @@ html {
 }
 
 
+/* ============================================
+   BODY
+   ============================================ */
+
 body {
     margin: 0;
     padding: 0;
@@ -45,7 +65,6 @@ body {
     overflow: hidden;
 
     background: var(--background);
-
     color: var(--text);
 
     font-family:
@@ -66,8 +85,6 @@ body {
    ============================================ */
 
 .container {
-    box-sizing: border-box;
-
     width: 100%;
 
     padding: 16px;
@@ -83,25 +100,27 @@ h1 {
 
     color: var(--text);
 
-    font-size: 21px;
+    font-size: 20px;
+    font-weight: 700;
 
-    font-weight: 650;
+    line-height: 24px;
 
     letter-spacing: -0.3px;
 }
 
 
 .subtitle {
-    margin: 3px 0 0;
+    margin: 3px 0 15px;
 
     color: var(--text-muted);
 
     font-size: 11px;
+    line-height: 16px;
 }
 
 
 /* ============================================
-   STATUS
+   GITHUB STATUS
    ============================================ */
 
 .status {
@@ -109,37 +128,28 @@ h1 {
 
     align-items: center;
 
-    gap: 8px;
+    gap: 7px;
 
-    box-sizing: border-box;
+    margin-bottom: 15px;
 
-    width: 100%;
+    color: var(--text-secondary);
 
-    margin-top: 14px;
-
-    padding: 9px 10px;
-
-    background: var(--panel);
-
-    border: 1px solid var(--border);
-
-    border-radius: var(--radius);
+    font-size: 12px;
+    font-weight: 500;
 }
 
 
 #statusDot {
-    color: var(--warning);
+    color: var(--success);
 
-    font-size: 9px;
+    font-size: 10px;
+
+    line-height: 1;
 }
 
 
 #statusText {
     color: var(--text-secondary);
-
-    font-size: 11px;
-
-    font-weight: 500;
 }
 
 
@@ -155,8 +165,7 @@ label {
     color: var(--text-secondary);
 
     font-size: 11px;
-
-    font-weight: 500;
+    font-weight: 600;
 }
 
 
@@ -165,29 +174,31 @@ label {
    ============================================ */
 
 input {
-    box-sizing: border-box;
+    display: block;
 
     width: 100%;
 
-    height: 36px;
+    height: 34px;
 
     padding: 0 10px;
 
-    margin: 0;
+    border: 1px solid var(--border);
+    border-radius: 6px;
 
     outline: none;
 
-    border: 1px solid var(--border);
-
-    border-radius: 7px;
-
-    background: #101012;
+    background: var(--panel);
 
     color: var(--text);
 
-    font-family: inherit;
+    font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        Arial,
+        sans-serif;
 
-    font-size: 11px;
+    font-size: 12px;
 
     transition:
         border-color 0.15s ease,
@@ -196,19 +207,14 @@ input {
 
 
 input::placeholder {
-    color: #626268;
-}
-
-
-input:hover {
-    border-color: var(--border-hover);
+    color: var(--text-muted);
 }
 
 
 input:focus {
-    background: #121214;
+    border-color: var(--border-hover);
 
-    border-color: #4a4a50;
+    background: var(--panel-hover);
 }
 
 
@@ -217,54 +223,80 @@ input:focus {
    ============================================ */
 
 button {
-    box-sizing: border-box;
+    display: block;
 
     width: 100%;
 
-    height: 36px;
+    min-height: 34px;
 
-    padding: 0 12px;
+    margin-top: 9px;
 
-    margin: 8px 0 0;
+    padding: 7px 12px;
 
-    border: 1px solid #d4d4d8;
+    border: 1px solid var(--border);
+    border-radius: 6px;
 
-    border-radius: 7px;
+    outline: none;
 
-    background: #e4e4e7;
+    background: var(--panel);
 
-    color: #111113;
+    color: var(--text);
+
+    font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        Arial,
+        sans-serif;
+
+    font-size: 12px;
+    font-weight: 600;
 
     cursor: pointer;
 
-    font-family: inherit;
-
-    font-size: 11px;
-
-    font-weight: 600;
-
     transition:
         background 0.15s ease,
-        border-color 0.15s ease;
+        border-color 0.15s ease,
+        color 0.15s ease;
 }
 
 
-button:hover {
-    background: #ffffff;
+button:hover:not(:disabled) {
+    background: var(--panel-hover);
 
-    border-color: #ffffff;
+    border-color: var(--border-hover);
 }
 
 
-button:active {
-    background: #d4d4d8;
+button:active:not(:disabled) {
+    background: #101012;
 }
 
 
 button:disabled {
-    opacity: 0.4;
+    opacity: 0.45;
 
     cursor: not-allowed;
+}
+
+
+/* ============================================
+   CONNECT BUTTON
+   ============================================ */
+
+#connectGithub {
+    background: var(--white);
+
+    border-color: var(--white);
+
+    color: #0b0b0c;
+}
+
+
+#connectGithub:hover:not(:disabled) {
+    background: #e7e7e9;
+
+    border-color: #e7e7e9;
 }
 
 
@@ -273,33 +305,37 @@ button:disabled {
    ============================================ */
 
 #connectedSection {
-    box-sizing: border-box;
+    margin-bottom: 15px;
 
-    margin-top: 9px;
+    padding: 11px;
 
-    padding: 9px 10px;
+    background: var(--panel);
 
-    background: #111813;
-
-    border: 1px solid #1d3424;
+    border: 1px solid var(--border);
 
     border-radius: var(--radius);
 }
 
 
 #connectedSection p {
-    margin: 0 0 7px;
+    margin: 0;
 
     color: var(--text-muted);
 
     font-size: 11px;
+    line-height: 16px;
 }
 
 
-#githubUsername {
-    color: #86efac;
+#connectedSection strong {
+    color: var(--text);
 
     font-weight: 600;
+}
+
+
+#disconnectGithub {
+    margin-top: 9px;
 }
 
 
@@ -308,13 +344,9 @@ button:disabled {
    ============================================ */
 
 .repo {
-    box-sizing: border-box;
+    margin-top: 15px;
 
-    width: 100%;
-
-    margin-top: 10px;
-
-    padding: 10px;
+    padding: 11px 12px;
 
     background: var(--panel);
 
@@ -331,8 +363,7 @@ button:disabled {
 
     color: var(--text-muted);
 
-    font-size: 9px;
-
+    font-size: 10px;
     font-weight: 600;
 
     text-transform: uppercase;
@@ -346,13 +377,151 @@ button:disabled {
 
     color: var(--text-secondary);
 
-    font-size: 10px;
-
+    font-size: 11px;
     font-weight: 500;
 
-    line-height: 1.4;
+    line-height: 16px;
 
-    overflow-wrap: anywhere;
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+
+    white-space: nowrap;
+}
+
+
+/* ============================================
+   CURRENT PROBLEM
+   ============================================ */
+
+.currentProblem {
+    margin-top: 15px;
+
+    padding: 12px;
+
+    background: var(--panel);
+
+    border: 1px solid var(--border);
+
+    border-radius: var(--radius);
+}
+
+
+.currentProblemHeader {
+    margin-bottom: 10px;
+
+    color: var(--text-muted);
+
+    font-size: 10px;
+    font-weight: 600;
+
+    text-transform: uppercase;
+
+    letter-spacing: 0.6px;
+}
+
+
+/* ============================================
+   EMPTY PROBLEM STATE
+   ============================================ */
+
+.problemEmpty {
+    color: var(--text-muted);
+
+    font-size: 12px;
+
+    line-height: 17px;
+}
+
+
+/* ============================================
+   PROBLEM DETAILS
+   ============================================ */
+
+.problemTop {
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    gap: 8px;
+}
+
+
+.problemNumber {
+    color: var(--text-muted);
+
+    font-size: 12px;
+    font-weight: 600;
+}
+
+
+.problemDifficulty {
+    padding: 3px 7px;
+
+    border: 1px solid var(--border);
+
+    border-radius: 5px;
+
+    color: var(--text-secondary);
+
+    font-size: 10px;
+    font-weight: 600;
+
+    line-height: 12px;
+}
+
+
+.problemDifficulty.easy {
+    color: var(--success);
+
+    border-color: rgba(34, 197, 94, 0.3);
+}
+
+
+.problemDifficulty.medium {
+    color: var(--warning);
+
+    border-color: rgba(245, 158, 11, 0.3);
+}
+
+
+.problemDifficulty.hard {
+    color: var(--danger);
+
+    border-color: rgba(239, 68, 68, 0.3);
+}
+
+
+/* ============================================
+   PROBLEM TITLE
+   ============================================ */
+
+.problemTitle {
+    margin-top: 6px;
+
+    color: var(--text);
+
+    font-size: 14px;
+    font-weight: 600;
+
+    line-height: 19px;
+}
+
+
+/* ============================================
+   PROBLEM LANGUAGE
+   ============================================ */
+
+.problemLanguage {
+    margin-top: 5px;
+
+    color: var(--text-muted);
+
+    font-size: 11px;
+
+    line-height: 15px;
 }
 
 
@@ -361,22 +530,18 @@ button:disabled {
    ============================================ */
 
 .stats {
-    display: flex;
+    display: grid;
+
+    grid-template-columns: 1fr 1fr;
 
     gap: 8px;
 
-    width: 100%;
-
-    margin: 10px 0;
+    margin-top: 15px;
 }
 
 
 .stat {
-    box-sizing: border-box;
-
-    flex: 1;
-
-    padding: 9px 6px;
+    padding: 11px;
 
     background: var(--panel);
 
@@ -394,10 +559,9 @@ button:disabled {
     color: var(--text);
 
     font-size: 18px;
+    font-weight: 700;
 
-    font-weight: 650;
-
-    line-height: 1.2;
+    line-height: 22px;
 }
 
 
@@ -408,13 +572,10 @@ button:disabled {
 
     color: var(--text-muted);
 
-    font-size: 8px;
+    font-size: 10px;
+    font-weight: 500;
 
-    font-weight: 600;
-
-    text-transform: uppercase;
-
-    letter-spacing: 0.5px;
+    line-height: 14px;
 }
 
 
@@ -423,33 +584,27 @@ button:disabled {
    ============================================ */
 
 .history {
-    margin-top: 10px;
+    margin-top: 15px;
 }
 
 
 .historyHeader {
-    margin-bottom: 6px;
+    margin-bottom: 8px;
 
-    color: var(--text-secondary);
+    color: var(--text-muted);
 
     font-size: 10px;
-
     font-weight: 600;
 
     text-transform: uppercase;
 
-    letter-spacing: 0.5px;
+    letter-spacing: 0.6px;
 }
 
 
-/* ============================================
-   HISTORY LIST
-   ============================================ */
-
 #historyList {
-    max-height: 125px;
-
-    overflow: hidden;
+    margin: 0;
+    padding: 0;
 }
 
 
@@ -458,19 +613,17 @@ button:disabled {
    ============================================ */
 
 .historyItem {
-    box-sizing: border-box;
+    margin-bottom: 6px;
 
-    width: 100%;
-
-    padding: 7px 9px;
-
-    margin-bottom: 5px;
+    padding: 9px 10px;
 
     background: var(--panel);
 
     border: 1px solid var(--border);
 
-    border-radius: 7px;
+    border-radius: 6px;
+
+    overflow: hidden;
 }
 
 
@@ -480,15 +633,12 @@ button:disabled {
 
 
 .historyTitle {
-    margin-bottom: 2px;
-
     color: var(--text-secondary);
 
-    font-size: 10px;
-
+    font-size: 11px;
     font-weight: 600;
 
-    line-height: 1.3;
+    line-height: 16px;
 
     white-space: nowrap;
 
@@ -499,11 +649,13 @@ button:disabled {
 
 
 .historyMeta {
+    margin-top: 3px;
+
     color: var(--text-muted);
 
-    font-size: 9px;
+    font-size: 10px;
 
-    line-height: 1.3;
+    line-height: 14px;
 
     white-space: nowrap;
 
@@ -518,21 +670,21 @@ button:disabled {
    ============================================ */
 
 .emptyHistory {
-    box-sizing: border-box;
-
     margin: 0;
 
-    padding: 9px;
+    padding: 10px;
 
     background: var(--panel);
 
     border: 1px solid var(--border);
 
-    border-radius: 7px;
+    border-radius: 6px;
 
     color: var(--text-muted);
 
-    font-size: 10px;
+    font-size: 11px;
+
+    line-height: 15px;
 
     text-align: center;
 }
@@ -543,48 +695,25 @@ button:disabled {
    ============================================ */
 
 #syncNow {
-    height: 37px;
-
-    margin-top: 10px;
+    margin-top: 15px;
 
     background: var(--white);
 
-    color: #111113;
-
     border-color: var(--white);
+
+    color: #0b0b0c;
 }
 
 
-#syncNow:hover {
-    background: #e4e4e7;
+#syncNow:hover:not(:disabled) {
+    background: #e7e7e9;
 
-    border-color: #e4e4e7;
+    border-color: #e7e7e9;
 }
 
 
-/* ============================================
-   DISCONNECT
-   ============================================ */
-
-#disconnectGithub {
-    height: 32px;
-
-    margin-top: 7px;
-
-    background: transparent;
-
-    border-color: var(--border);
-
-    color: var(--text-muted);
-}
-
-
-#disconnectGithub:hover {
-    background: #18181b;
-
-    border-color: #3f3f46;
-
-    color: #d4d4d8;
+#syncNow:active:not(:disabled) {
+    background: #d7d7d9;
 }
 
 
@@ -593,74 +722,44 @@ button:disabled {
    ============================================ */
 
 #message {
-    min-height: 13px;
+    min-height: 16px;
 
-    margin: 7px 0 0;
+    margin: 8px 2px 0;
 
     color: var(--text-muted);
 
-    font-size: 9px;
+    font-size: 10px;
 
-    line-height: 1.3;
+    line-height: 15px;
 
     text-align: center;
 }
 
 
 /* ============================================
-   REMOVE ALL SCROLLBARS
+   MESSAGE STATES
    ============================================ */
 
-* {
-    scrollbar-width: none;
-}
-
-
-*::-webkit-scrollbar {
-    display: none;
-
-    width: 0;
-
-    height: 0;
-}
-
-
-/* ============================================
-   SELECTION
-   ============================================ */
-
-::selection {
-    background: #3f3f46;
-
-    color: #ffffff;
-}
-
-
-/* ============================================
-   SYNC STATUS MESSAGE
-   ============================================ */
-
-.message {
-    margin-top: 8px;
-    min-height: 18px;
-    font-size: 12px;
-    line-height: 18px;
-    color: var(--text-muted);
-    transition: color 0.15s ease;
-}
-
-.message.loading {
-    color: var(--text-secondary);
-}
-
-.message.success {
+#message.success {
     color: var(--success);
 }
 
-.message.duplicate {
+
+#message.error {
+    color: var(--danger);
+}
+
+
+#message.warning {
+    color: var(--warning);
+}
+
+
+#message.duplicate {
     color: var(--text-secondary);
 }
 
-.message.error {
-    color: var(--danger);
+
+#message.loading {
+    color: var(--text-muted);
 }

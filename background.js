@@ -13,6 +13,7 @@ const GITHUB_API =
 const DEFAULT_REPOSITORY =
     "Rudra-AI-2127/leetcode-solutions";
 
+
 // ============================================
 // SHOW BROWSER NOTIFICATION
 // ============================================
@@ -45,7 +46,6 @@ function showNotification(title, message) {
 }
 
 
-
 // ============================================
 // GET GITHUB TOKEN
 // ============================================
@@ -58,6 +58,7 @@ async function getGitHubToken() {
         );
 
     return data.githubToken || null;
+
 }
 
 
@@ -163,9 +164,20 @@ async function connectGitHub(token) {
 
     try {
 
+        if (!token) {
+
+            throw new Error(
+                "GitHub token is required."
+            );
+
+        }
+
+
         const result =
             await githubRequest(
-                "/user"
+                "/user",
+                {},
+                token
             );
 
 
@@ -291,9 +303,9 @@ async function extractEditorData(
 
                 func: () => {
 
-                    // ============================================
+                    // ========================================
                     // CHECK MONACO
-                    // ============================================
+                    // ========================================
 
                     if (
                         typeof monaco ===
@@ -313,9 +325,9 @@ async function extractEditorData(
                     }
 
 
-                    // ============================================
+                    // ========================================
                     // GET MONACO MODELS
-                    // ============================================
+                    // ========================================
 
                     const models =
                         monaco
@@ -341,9 +353,9 @@ async function extractEditorData(
                     }
 
 
-                    // ============================================
+                    // ========================================
                     // FIND CODE MODEL
-                    // ============================================
+                    // ========================================
 
                     let selectedModel =
                         null;
@@ -387,17 +399,17 @@ async function extractEditorData(
                     }
 
 
-                    // ============================================
+                    // ========================================
                     // GET CODE
-                    // ============================================
+                    // ========================================
 
                     const code =
                         selectedModel.getValue();
 
 
-                    // ============================================
+                    // ========================================
                     // DETECT LANGUAGE
-                    // ============================================
+                    // ========================================
 
                     let language =
                         selectedModel
@@ -474,6 +486,8 @@ async function extractEditorData(
     }
 
 }
+
+
 // ============================================
 // GET FILE EXTENSION
 // ============================================
@@ -572,16 +586,25 @@ async function getLeetCodeProblemMetadata(
 
     const query = `
         query questionData($titleSlug: String!) {
+
             question(titleSlug: $titleSlug) {
 
                 questionFrontendId
 
+                title
+
+                difficulty
+
                 topicTags {
+
                     name
+
                     slug
+
                 }
 
             }
+
         }
     `;
 
@@ -670,6 +693,14 @@ async function getLeetCodeProblemMetadata(
             number:
                 number,
 
+            title:
+                question.title ||
+                null,
+
+            difficulty:
+                question.difficulty ||
+                null,
+
             topics:
                 topics
 
@@ -686,6 +717,12 @@ async function getLeetCodeProblemMetadata(
         return {
 
             number:
+                null,
+
+            title:
+                null,
+
+            difficulty:
                 null,
 
             topics:
@@ -716,10 +753,6 @@ function getTopicFolderFromTopics(
         );
 
 
-    // ============================================
-    // ARRAYS
-    // ============================================
-
     if (
         topicSet.has("array")
     ) {
@@ -729,10 +762,6 @@ function getTopicFolderFromTopics(
     }
 
 
-    // ============================================
-    // LINKED LIST
-    // ============================================
-
     if (
         topicSet.has("linked list")
     ) {
@@ -741,10 +770,6 @@ function getTopicFolderFromTopics(
 
     }
 
-
-    // ============================================
-    // TREES
-    // ============================================
 
     if (
         topicSet.has("tree") ||
@@ -757,10 +782,6 @@ function getTopicFolderFromTopics(
     }
 
 
-    // ============================================
-    // GRAPHS
-    // ============================================
-
     if (
         topicSet.has("graph")
     ) {
@@ -769,10 +790,6 @@ function getTopicFolderFromTopics(
 
     }
 
-
-    // ============================================
-    // DYNAMIC PROGRAMMING
-    // ============================================
 
     if (
         topicSet.has("dynamic programming")
@@ -783,10 +800,6 @@ function getTopicFolderFromTopics(
     }
 
 
-    // ============================================
-    // BACKTRACKING
-    // ============================================
-
     if (
         topicSet.has("backtracking")
     ) {
@@ -796,10 +809,6 @@ function getTopicFolderFromTopics(
     }
 
 
-    // ============================================
-    // BINARY SEARCH
-    // ============================================
-
     if (
         topicSet.has("binary search")
     ) {
@@ -808,10 +817,6 @@ function getTopicFolderFromTopics(
 
     }
 
-
-    // ============================================
-    // HEAP / PRIORITY QUEUE
-    // ============================================
 
     if (
         topicSet.has("heap") ||
@@ -823,10 +828,6 @@ function getTopicFolderFromTopics(
     }
 
 
-    // ============================================
-    // STACK / QUEUE
-    // ============================================
-
     if (
         topicSet.has("stack") ||
         topicSet.has("queue")
@@ -837,10 +838,6 @@ function getTopicFolderFromTopics(
     }
 
 
-    // ============================================
-    // HASH TABLE
-    // ============================================
-
     if (
         topicSet.has("hash table")
     ) {
@@ -849,10 +846,6 @@ function getTopicFolderFromTopics(
 
     }
 
-
-    // ============================================
-    // GREEDY
-    // ============================================
 
     if (
         topicSet.has("greedy")
@@ -863,10 +856,6 @@ function getTopicFolderFromTopics(
     }
 
 
-    // ============================================
-    // STRING
-    // ============================================
-
     if (
         topicSet.has("string")
     ) {
@@ -876,10 +865,6 @@ function getTopicFolderFromTopics(
     }
 
 
-    // ============================================
-    // MATH
-    // ============================================
-
     if (
         topicSet.has("math")
     ) {
@@ -888,10 +873,6 @@ function getTopicFolderFromTopics(
 
     }
 
-
-    // ============================================
-    // DEFAULT
-    // ============================================
 
     return "Other";
 
@@ -945,6 +926,7 @@ function encodeBase64(text) {
 
 
     let binary = "";
+
 
     for (
         const byte of bytes
@@ -1070,9 +1052,9 @@ async function syncSolution(
 
     try {
 
-        // ============================================
+        // ========================================
         // GET CONNECTION STATE
-        // ============================================
+        // ========================================
 
         const connection =
             await chrome.storage.local.get(
@@ -1138,9 +1120,9 @@ async function syncSolution(
         }
 
 
-        // ============================================
-        // GET LEETCODE METADATA
-        // ============================================
+        // ========================================
+        // GET CANONICAL LEETCODE METADATA
+        // ========================================
 
         const metadata =
             await getLeetCodeProblemMetadata(
@@ -1152,9 +1134,9 @@ async function syncSolution(
             metadata.topics;
 
 
-        // ============================================
-        // USE CANONICAL PROBLEM NUMBER
-        // ============================================
+        // ========================================
+        // UPDATE CANONICAL PROBLEM DATA
+        // ========================================
 
         if (
             metadata.number
@@ -1164,6 +1146,48 @@ async function syncSolution(
                 metadata.number;
 
         }
+
+
+        if (
+            metadata.title
+        ) {
+
+            problem.title =
+                metadata.title;
+
+        }
+
+
+        if (
+            metadata.difficulty
+        ) {
+
+            problem.difficulty =
+                metadata.difficulty;
+
+        }
+
+
+        // ========================================
+        // IMPORTANT:
+        // SAVE CANONICAL DATA BACK TO STORAGE
+        // ========================================
+
+        await chrome.storage.local.set({
+
+            currentProblem:
+                problem,
+
+            language:
+                language
+
+        });
+
+
+        console.log(
+            "LC2Git: Canonical problem data saved:",
+            problem
+        );
 
 
         console.log(
@@ -1179,8 +1203,8 @@ async function syncSolution(
 
 
         console.log(
-            "LC2Git: Problem number:",
-            problem.number
+            "LC2Git: Difficulty:",
+            problem.difficulty
         );
 
 
@@ -1196,9 +1220,9 @@ async function syncSolution(
         );
 
 
-        // ============================================
+        // ========================================
         // GET FOLDER
-        // ============================================
+        // ========================================
 
         const folder =
             getTopicFolderFromTopics(
@@ -1212,9 +1236,9 @@ async function syncSolution(
         );
 
 
-        // ============================================
+        // ========================================
         // GET FILE EXTENSION
-        // ============================================
+        // ========================================
 
         const extension =
             getFileExtension(
@@ -1222,9 +1246,9 @@ async function syncSolution(
             );
 
 
-        // ============================================
+        // ========================================
         // CREATE FILE NAME
-        // ============================================
+        // ========================================
 
         const fileName =
             createFileName(
@@ -1232,9 +1256,9 @@ async function syncSolution(
             );
 
 
-        // ============================================
+        // ========================================
         // CREATE GITHUB PATH
-        // ============================================
+        // ========================================
 
         const path =
             `${folder}/${fileName}.${extension}`;
@@ -1246,9 +1270,9 @@ async function syncSolution(
         );
 
 
-        // ============================================
+        // ========================================
         // GET EXISTING FILE
-        // ============================================
+        // ========================================
 
         const existingFile =
             await getExistingFile(
@@ -1256,9 +1280,9 @@ async function syncSolution(
             );
 
 
-        // ============================================
+        // ========================================
         // DUPLICATE PROTECTION
-        // ============================================
+        // ========================================
 
         if (
             existingFile &&
@@ -1312,26 +1336,26 @@ async function syncSolution(
         }
 
 
-        // ============================================
+        // ========================================
         // GET REPOSITORY
-        // ============================================
+        // ========================================
 
         const repository =
             connection.githubRepository ||
             DEFAULT_REPOSITORY;
 
 
-        // ============================================
+        // ========================================
         // CREATE COMMIT MESSAGE
-        // ============================================
+        // ========================================
 
         const commitMessage =
             `feat: add ${problem.number}. ${problem.title}`;
 
 
-        // ============================================
+        // ========================================
         // PREPARE GITHUB REQUEST
-        // ============================================
+        // ========================================
 
         const requestBody = {
 
@@ -1344,9 +1368,9 @@ async function syncSolution(
         };
 
 
-        // ============================================
+        // ========================================
         // UPDATE EXISTING FILE
-        // ============================================
+        // ========================================
 
         if (
             existingFile &&
@@ -1359,9 +1383,9 @@ async function syncSolution(
         }
 
 
-        // ============================================
+        // ========================================
         // PUSH TO GITHUB
-        // ============================================
+        // ========================================
 
         const result =
             await githubRequest(
@@ -1380,15 +1404,19 @@ async function syncSolution(
             );
 
 
-        // ============================================
+        // ========================================
         // UPDATE LOCAL STATISTICS
-        // ============================================
+        // ========================================
 
         const stats =
             await chrome.storage.local.get([
+
                 "syncedCount",
+
                 "commitCount",
+
                 "syncHistory"
+
             ]);
 
 
@@ -1404,9 +1432,9 @@ async function syncSolution(
             ) + 1;
 
 
-        // ============================================
+        // ========================================
         // CREATE SYNC HISTORY ENTRY
-        // ============================================
+        // ========================================
 
         const historyEntry = {
 
@@ -1420,7 +1448,6 @@ async function syncSolution(
                 language,
 
             folder:
-
                 folder,
 
             path:
@@ -1436,9 +1463,9 @@ async function syncSolution(
         };
 
 
-        // ============================================
+        // ========================================
         // GET EXISTING HISTORY
-        // ============================================
+        // ========================================
 
         const syncHistory =
             Array.isArray(
@@ -1448,18 +1475,18 @@ async function syncSolution(
                 : [];
 
 
-        // ============================================
+        // ========================================
         // ADD NEW ENTRY TO FRONT
-        // ============================================
+        // ========================================
 
         syncHistory.unshift(
             historyEntry
         );
 
 
-        // ============================================
+        // ========================================
         // KEEP LAST 20 SYNCS
-        // ============================================
+        // ========================================
 
         const limitedHistory =
             syncHistory.slice(
@@ -1468,9 +1495,9 @@ async function syncSolution(
             );
 
 
-        // ============================================
+        // ========================================
         // SAVE STATISTICS + HISTORY
-        // ============================================
+        // ========================================
 
         await chrome.storage.local.set({
 
@@ -1486,9 +1513,9 @@ async function syncSolution(
         });
 
 
-        // ============================================
+        // ========================================
         // SUCCESS
-        // ============================================
+        // ========================================
 
         console.log(
             "🎉 LC2Git: Solution synced to GitHub!"
@@ -1548,7 +1575,8 @@ async function syncSolution(
 
         showNotification(
             "LC2Git — Sync failed",
-            error.message || "Unable to sync solution to GitHub."
+            error.message ||
+            "Unable to sync solution to GitHub."
         );
 
 
@@ -1578,9 +1606,9 @@ chrome.runtime.onMessage.addListener(
         sendResponse
     ) => {
 
-        // ============================================
+        // ========================================
         // CONNECT GITHUB
-        // ============================================
+        // ========================================
 
         if (
             message.type ===
@@ -1615,9 +1643,9 @@ chrome.runtime.onMessage.addListener(
         }
 
 
-        // ============================================
+        // ========================================
         // DISCONNECT GITHUB
-        // ============================================
+        // ========================================
 
         if (
             message.type ===
@@ -1650,9 +1678,9 @@ chrome.runtime.onMessage.addListener(
         }
 
 
-        // ============================================
+        // ========================================
         // GET GITHUB STATUS
-        // ============================================
+        // ========================================
 
         if (
             message.type ===
@@ -1711,9 +1739,9 @@ chrome.runtime.onMessage.addListener(
         }
 
 
-        // ============================================
+        // ========================================
         // EXTRACT EDITOR DATA
-        // ============================================
+        // ========================================
 
         if (
             message.type ===
@@ -1770,44 +1798,42 @@ chrome.runtime.onMessage.addListener(
         }
 
 
-        // ============================================
+        // ========================================
         // SHOW NOTIFICATION
-        // ============================================
+        // ========================================
 
         if (
             message.type ===
             "SHOW_NOTIFICATION"
         ) {
 
-            console.log(
-                "LC2Git: SHOW_NOTIFICATION received:",
-                message
-            );
-
             showNotification(
+
                 message.title ||
-                    "LC2Git",
+                "LC2Git",
 
                 message.message ||
-                    ""
+                ""
+
             );
 
-            console.log(
-                "LC2Git: showNotification() called."
-            );
 
             sendResponse({
+
                 success:
                     true
+
             });
 
+
             return false;
+
         }
 
 
-        // ============================================
+        // ========================================
         // SYNC SOLUTION
-        // ============================================
+        // ========================================
 
         if (
             message.type ===
@@ -1815,14 +1841,18 @@ chrome.runtime.onMessage.addListener(
         ) {
 
             chrome.storage.local.get(
+
                 [
                     "currentProblem",
                     "code",
                     "language"
                 ]
+
             )
                 .then(
-                    async (storedData) => {
+                    async (
+                        storedData
+                    ) => {
 
                         const problem =
                             message.problem ||
@@ -1864,9 +1894,13 @@ chrome.runtime.onMessage.addListener(
 
                         const result =
                             await syncSolution(
+
                                 problem,
+
                                 code,
+
                                 language
+
                             );
 
 
@@ -1904,9 +1938,9 @@ chrome.runtime.onMessage.addListener(
         }
 
 
-        // ============================================
+        // ========================================
         // UNKNOWN MESSAGE
-        // ============================================
+        // ========================================
 
         sendResponse({
 
